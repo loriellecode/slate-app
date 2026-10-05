@@ -519,6 +519,9 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .ed-status.error { color: var(--red); background: var(--red-soft); border-radius: 14px; padding: 12px 14px 12px 40px; font-weight: 500; position: relative; }
 .ed-status.error::before { content: "!"; position: absolute; left: 12px; top: 11px; width: 20px; height: 20px; border-radius: 50%; background: var(--red); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
 .user-field:has(input.bad) { box-shadow: inset 0 0 0 2px var(--red); }
+.opt.danger-confirm { background: var(--red-soft); }
+.kc-remove { margin-top: 14px; align-self: flex-start; height: 46px; padding: 0 20px; border-radius: 23px; background: var(--red-soft); color: var(--red); font-size: 15px; font-weight: 500; }
+.kc-remove.armed { background: var(--red); color: #fff; }
 .ed-links { display: flex; gap: 16px; flex: 0 0 auto; }
 .ed-links .link, .h-label > span:first-child { white-space: nowrap; }
 .kc-tubes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
@@ -770,6 +773,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <button class="opt" id="themeOpt"><span>Appearance</span><span id="themeVal" style="color:var(--muted)">System</span></button>
     <button class="opt" id="styleOpt"><span>Style</span><span id="styleVal" style="color:var(--muted)">Classic</span></button>
     <button class="opt" id="clearOpt"><span>Clear this day</span><span style="color:var(--muted)">›</span></button>
+    <button class="opt" id="clearCalOpt"><span>Clear calendar</span><span id="clearCalVal" style="color:var(--muted)">›</span></button>
     <button class="opt" id="accentsOpt"><span>Accents</span><span style="color:var(--muted)">›</span></button>
     <button class="opt" id="backupOpt"><span>Back up or restore data</span><span style="color:var(--muted)">›</span></button>
     <button class="close" data-close>Done</button>
@@ -2187,6 +2191,23 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     rows.forEach((r, i) => r.animate([{ opacity: 1 }, { opacity: 0, transform: "translateX(30px)" }], { duration: 300, delay: Math.min(i, 8) * 40, fill: "forwards" }));
     setTimeout(() => { refreshList(); staggerIn(listPane.querySelectorAll(".row"), 1); }, 300 + Math.min(rows.length, 9) * 40);
   });
+  // Clear calendar: removes every day's tasks (two taps to confirm). Routines, ideas, check-ins, categories and Kids Center stay.
+  let clearCalTimer = 0;
+  $("clearCalOpt").addEventListener("click", () => {
+    const b = $("clearCalOpt"), v = $("clearCalVal");
+    if (b.dataset.confirm !== "1") {
+      const n = Object.keys(store).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k) && (store[k] || []).length).length;
+      if (!n) { v.textContent = "Nothing to clear"; clearTimeout(clearCalTimer); clearCalTimer = setTimeout(() => { v.textContent = "›"; }, 2200); return; }
+      b.dataset.confirm = "1"; b.classList.add("danger-confirm"); v.textContent = `Tap again to clear ${n} day${n === 1 ? "" : "s"}`; v.style.color = "var(--red)";
+      clearTimeout(clearCalTimer); clearCalTimer = setTimeout(() => { b.dataset.confirm = ""; b.classList.remove("danger-confirm"); v.textContent = "›"; v.style.color = ""; }, 4000);
+      return;
+    }
+    clearTimeout(clearCalTimer); b.dataset.confirm = ""; b.classList.remove("danger-confirm"); v.textContent = "›"; v.style.color = "";
+    Object.keys(store).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).forEach(k => { delete store[k]; });
+    save(); $("settingsSheet").classList.remove("open");
+    if (view === "week") buildWeek(); else if (view === "month") refreshMonth(); else if (view === "home") render(false); else if (view === "kids") { /* nothing on screen to refresh */ } else refreshList();
+    showToast({ text: "Your calendar is cleared." });
+  });
   $("settingsBtn").addEventListener("click", () => openSheet($("settingsSheet")));
 
   // ---------- home ----------
@@ -2748,7 +2769,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const k = P.kids.find(x => x.id === selKid);
     if (!k) { ed.innerHTML = `<div class="h-label"><span>Chore list</span></div><div class="kc-empty">Add a kid on the left, then build their chore list here.</div>`; return; }
     ed.innerHTML = `
-      <div class="h-label"><span>${esc(k.name)}'s chores</span><span class="ed-links"><button class="link" type="button" id="kidHist">Chore history</button><button class="link" type="button" id="kidDel">Remove ${esc(k.name)}</button></span></div>
+      <div class="h-label"><span>${esc(k.name)}'s chores</span><span class="ed-links"><button class="link" type="button" id="kidHist">Chore history</button></span></div>
       <div class="kc-list ed-list" id="edList"></div>
       <div class="kc-add"><input id="choreText" type="text" placeholder="Add a chore, like Feed the dog" aria-label="New chore" enterkeyhint="done"><button type="button" id="choreAdd">Add</button></div>
       <div class="ed-foot">
@@ -2759,6 +2780,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
           <button type="button" class="ed-here" id="edHere"${k.chores.length ? "" : " disabled"}>Use on this iPad</button>
         </div>
         <div class="ed-status" id="edStatus" role="status" aria-live="polite"></div>
+        <button type="button" class="kc-remove" id="kidDel">Remove ${esc(k.name)}</button>
       </div>`;
     const status = (msg, kind) => {
       const el = $("edStatus"); el.className = "ed-status" + (kind ? " " + kind : "");
@@ -2776,7 +2798,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     $("kidHist").addEventListener("click", () => openHistory(k));
     $("kidDel").addEventListener("click", ev => {
       const btn = ev.currentTarget;
-      if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Tap again to remove"; setTimeout(() => { if (btn.isConnected) { btn.dataset.confirm = ""; btn.textContent = "Remove " + k.name; } }, 3000); return; }
+      if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Tap again to remove " + k.name; btn.classList.add("armed"); setTimeout(() => { if (btn.isConnected) { btn.dataset.confirm = ""; btn.classList.remove("armed"); btn.textContent = "Remove " + k.name; } }, 3500); return; }
       P.kids.splice(P.kids.indexOf(k), 1); selKid = null; save(); renderParent();
     });
     $("kidUser").value = k.username || "";
