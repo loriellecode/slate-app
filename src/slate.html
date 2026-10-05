@@ -522,6 +522,14 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .opt.danger-confirm { background: var(--red-soft); }
 .kc-remove { margin-top: 14px; align-self: flex-start; height: 46px; padding: 0 20px; border-radius: 23px; background: var(--red-soft); color: var(--red); font-size: 15px; font-weight: 500; }
 .kc-remove.armed { background: var(--red); color: #fff; }
+.ed-state { margin-top: 10px; font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+.ed-state.on { color: var(--green); }
+.ed-state.on::before { content: "\2713  "; }
+.hist-item .t { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.hist-item .t b { font-weight: 400; }
+.hist-now { font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+.hist-now.on { color: var(--green); }
+.hist-chores { font-size: 14px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
 .ed-links { display: flex; gap: 16px; flex: 0 0 auto; }
 .ed-links .link, .h-label > span:first-child { white-space: nowrap; }
 .kc-tubes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
@@ -2486,10 +2494,13 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   const shortDate = d => cap(MON3(d)) + " " + d.getDate();
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  const chorePayload = kid => ({ v: 1, name: kid.name, cadence: kid.cadence || "week", sentAt: kid.sentAt || Date.now(), chores: kid.chores.map(c => ({ id: c.id, text: c.text, days: c.days, t: c.t || "" })) });
-  function importChores(d) {
-    const c = kidsData().kid;
-    c.name = d.name || c.name || ""; c.chores = d.chores; c.cadence = d.cadence || "week";
+  const chorePayload = (kid, list) => ({ v: 1, name: kid.name, cadence: kid.cadence || "week", sentAt: kid.sentAt || Date.now(), chores: (list || kid.chores).map(c => ({ id: c.id, text: c.text, days: c.days, t: c.t || "" })) });
+  function importChores(d, src) {
+    const c = kidsData().kid, from = src || "local";
+    c.name = d.name || c.name || "";
+    // each grown-up's list replaces only their own earlier list, so one update never wipes another's chores
+    c.chores = [...c.chores.filter(x => x.src && x.src !== from), ...(d.chores || []).map(x => Object.assign({}, x, { src: from }))];
+    c.cadence = d.cadence || "week";
     c.sentAt = d.sentAt || Date.now(); c.receivedAt = Date.now();
     save();
   }
@@ -2796,6 +2807,18 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     $("choreAdd").addEventListener("click", addChore);
     $("choreText").addEventListener("keydown", e => { if (e.key === "Enter") addChore(); });
     $("kidHist").addEventListener("click", () => openHistory(k));
+    // taking a chore off the list also takes it off the kid's list, and they get the usual update notice
+    removeHook = async ch => {
+      if (!k.sent || !k.sent.some(x => x.id === ch.id)) return;
+      const u = (k.username || "").trim(), rest = k.sent.filter(x => x.id !== ch.id);
+      if (!u || !CAN_SYNC || !session) { status(`Removed here. Tap Send to take it off ${k.name}'s list too.`, "error"); return; }
+      try {
+        k.sentAt = Date.now();
+        const r = await rpc("send_family_chores", { p_username: u, p_payload: chorePayload(k, rest), p_role: kidsData().role || "parent" }, true);
+        if (r && r.status === "ok") { k.sent = rest; save(); renderKidList(); status(`Removed "${ch.text}" from ${k.name}'s list. ${k.name} gets an update.`, "ok"); }
+        else status(`Couldn't take it off ${k.name}'s list yet. Tap Send to try again.`, "error");
+      } catch (e) { status(friendly(e), "error"); }
+    };
     $("kidDel").addEventListener("click", ev => {
       const btn = ev.currentTarget;
       if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Tap again to remove " + k.name; btn.classList.add("armed"); setTimeout(() => { if (btn.isConnected) { btn.dataset.confirm = ""; btn.classList.remove("armed"); btn.textContent = "Remove " + k.name; } }, 3500); return; }
@@ -2814,7 +2837,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
         const prev = k.sentAt; k.sentAt = Date.now();
         const r = await rpc("send_family_chores", { p_username: u, p_payload: chorePayload(k), p_role: kidsData().role || "parent" }, true);
         const st = r && r.status;
-        if (st === "ok") { if (r.kid) k.kidId = r.kid; save(); renderKidList(); status(`Sent to @${u}. ${k.name} gets a notification that their chores were updated.`, "ok"); }
+        if (st === "ok") { if (r.kid) k.kidId = r.kid; k.sent = k.chores.map(c => ({ id: c.id, text: c.text, days: c.days.slice(), t: c.t || "" })); save(); renderKidList(); renderChoreRows(k); status(`Sent to @${u}. ${k.name} gets a notification that their chores were updated.`, "ok"); }
         else {
           k.sentAt = prev;
           status(st === "no_user" ? `We couldn't find a Slate account with the username @${u}. Check the spelling with ${k.name} and try again.`
@@ -2833,6 +2856,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     });
     if (animate) ed.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 380, easing: EASE });
   }
+  let removeHook = null;
+  const choreSig = c => [c.text, (c.days || []).join(""), c.t || ""].join("|");
   function renderChoreRows(k, animateLast) {
     const list = $("edList"); list.replaceChildren();
     if (!k.chores.length) { list.innerHTML = `<div class="kc-empty">No chores yet. Add one below, then pick the days.</div>`; return; }
@@ -2846,13 +2871,22 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       const showT = () => { tl.textContent = ch.t ? fmtTime(ch.t) : "+ time"; tl.classList.toggle("none", !ch.t); };
       tin.value = ch.t || ""; showT();
       tin.addEventListener("change", () => { ch.t = tin.value || ""; save(); showT(); });
+      const stEl = document.createElement("div"); stEl.className = "ed-state"; row.appendChild(stEl);
+      const paint = () => {
+        const sent = (k.sent || []).find(x => x.id === ch.id);
+        const same = sent && choreSig(sent) === choreSig(ch);
+        stEl.className = "ed-state" + (same ? " on" : ""); stEl.textContent = same ? `On ${k.name}'s list` : sent ? "Changed. Tap Send to update" : "Not sent yet";
+      };
+      paint();
+      ti.addEventListener("change", paint); tin.addEventListener("change", paint);
       row.querySelectorAll(".ed-days button").forEach(b => b.addEventListener("click", () => {
         const i = +b.dataset.d, at = ch.days.indexOf(i);
         if (at > -1) { if (ch.days.length === 1) return; ch.days.splice(at, 1); } else { ch.days.push(i); ch.days.sort(); }
-        b.setAttribute("aria-pressed", String(at === -1)); save();
+        b.setAttribute("aria-pressed", String(at === -1)); save(); paint();
       }));
       row.querySelector(".x").addEventListener("click", () => {
         k.chores.splice(k.chores.indexOf(ch), 1); save();
+        if (removeHook) removeHook(ch);
         row.animate([{ opacity: 1 }, { opacity: 0, transform: "translateX(20px)" }], { duration: 220, easing: EASE, fill: "forwards" }).onfinish = () => { renderChoreRows(k); renderKidList(); $("kidSend").disabled = $("edHere").disabled = !k.chores.length; };
       });
       list.appendChild(row);
@@ -2926,13 +2960,17 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     if (!CAN_SYNC || !session) { list.innerHTML = `<div class="kc-empty">Sign in to see the history.</div>`; return; }
     if (!k.kidId) { list.innerHTML = `<div class="kc-empty">Send ${esc(k.name)} chores once, and every list your family sends will show up here.</div>`; return; }
     try {
-      const rows = await rpc("chore_history", { p_kid: k.kidId }, true);
+      const rows = await rpc("family_lists", { p_kid: k.kidId }, true);
       list.replaceChildren();
       if (!rows || !rows.length) { list.innerHTML = `<div class="kc-empty">No lists sent yet.</div>`; return; }
-      rows.forEach(r => {
-        const d = new Date(r.created_at), it = document.createElement("div"); it.className = "dd-item";
-        it.innerHTML = `<span class="c hist-c">${esc((ROLE_LABEL[r.sender_role] || "Parent").charAt(0))}</span><span class="t"></span><span class="tm"></span>`;
-        it.querySelector(".t").textContent = (r.is_me ? "You" : `${ROLE_LABEL[r.sender_role] || "Parent"} @${r.sender}`) + ` sent ${r.chore_count} chore${r.chore_count === 1 ? "" : "s"}`;
+      const myLatest = rows.findIndex(r => r.is_me);
+      rows.forEach((r, i) => {
+        const d = new Date(r.created_at), it = document.createElement("div"); it.className = "dd-item hist-item";
+        const n = (r.chores || []).length;
+        it.innerHTML = `<span class="c hist-c">${esc((ROLE_LABEL[r.sender_role] || "Parent").charAt(0))}</span><span class="t"><b></b><small class="hist-now"></small><span class="hist-chores"></span></span><span class="tm"></span>`;
+        it.querySelector("b").textContent = (r.is_me ? "You" : `${ROLE_LABEL[r.sender_role] || "Parent"} @${r.sender}`) + ` sent ${n} chore${n === 1 ? "" : "s"}`;
+        it.querySelector(".hist-chores").textContent = n ? r.chores.map(c => c.text).join(" · ") : "An empty list (everything was removed)";
+        if (i === myLatest) { const now = it.querySelector(".hist-now"); now.textContent = r.delivered ? `This is what ${k.name} sees now` : `${k.name} will see this when they open Slate`; now.classList.add("on"); }
         it.querySelector(".tm").textContent = shortDate(d) + ", " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
         list.appendChild(it);
       });
@@ -3500,10 +3538,11 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   async function checkChoreInbox(manual) {
     if (!CAN_SYNC || !session) { if (manual) showToast({ text: "Sign in so your grown-up can send your chores.", action: "Sign in", go: openAccount }); return; }
     try {
-      const rows = await rpc("fetch_family_chores", {}, true);
+      const rows = await rpc("fetch_family_chores_v2", {}, true);
       if (!Array.isArray(rows) || !rows.length) { if (manual) showToast({ text: "No new chores right now." }); return; }
-      const latest = rows[rows.length - 1];
-      importChores(latest.payload || {});
+      const latest = rows[rows.length - 1], bySrc = {};
+      rows.forEach(r => { bySrc[r.src] = r; });
+      Object.values(bySrc).forEach(r => importChores(r.payload || {}, r.src));
       await rpc("ack_chores", { p_ids: rows.map(r => r.id) }, true);
       notify(`Your chores just got an update by ${ROLE_WORD[latest.sender_role] || "a parent"}.`, { action: view === "kids" ? "" : "Open", go: () => { kidsData().mode = "kid"; save(); switchView("kids"); } });
       if (view === "kids" && kidsData().mode === "kid") buildKids();
