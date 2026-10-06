@@ -20,6 +20,7 @@ head = f"""<!doctype html>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Slate">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#f2f2f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
@@ -34,7 +35,7 @@ head = f"""<!doctype html>
     pick(); if (mq && mq.addEventListener) mq.addEventListener("change", pick);
   }})();
 </script>
-<style>:root{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0}}[hidden]{{display:none!important}}img{{max-width:100%}}</style>
+<style>body{{margin:0}}[hidden]{{display:none!important}}img{{max-width:100%}}</style>
 {style}
 </head>
 <body>
