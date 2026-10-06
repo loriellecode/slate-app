@@ -40,7 +40,7 @@ html[data-bg] #bgLayer { display: block; }
 html:root[data-bg][data-bg][data-bg] { --bg: rgba(255,255,255,.14); --card: rgba(16,42,84,.30); --ink: #ffffff; --on-ink: #0b2342; --muted: rgba(255,255,255,.72); --line: rgba(255,255,255,.26); --soft: rgba(255,255,255,.5); --shadow: rgba(4,20,48,.28); color-scheme: dark; }
 html[data-bg] body { text-shadow: 0 1px 14px rgba(4,24,56,.28); }
 html[data-bg] :is(input, textarea, select, .sheet, .side-panel) { text-shadow: none; }
-html[data-bg] :is(.dock, .h-card, .sheet, .side-panel, .icon-btn, .toast, .seg, .tube, .avatar, .row, .routine, .chip, .m-cell) {
+html[data-bg] :is(.dock, .h-ai, .h-card, .sheet, .side-panel, .icon-btn, .toast, .seg, .tube, .avatar, .row, .routine, .chip, .m-cell) {
   -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.26), inset 0 1.5px 0 rgba(255,255,255,.4), 0 6px 16px var(--shadow);
 }
@@ -686,12 +686,55 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 #app.home .home-pane {
   grid-area: home; display: grid; min-height: 0; overflow-y: auto; scrollbar-width: none; touch-action: pan-y;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: auto minmax(250px, 1fr) minmax(250px, 1fr);
-  grid-template-areas: "hello hello clock" "progress feel feel" "ideas ideas attn";
+  grid-template-rows: auto auto minmax(250px, 1fr) minmax(250px, 1fr);
+  grid-template-areas: "hello hello clock" "ai ai ai" "progress feel feel" "ideas ideas attn";
   gap: 16px;
 }
 .home-pane::-webkit-scrollbar { display: none; }
 .h-card { background: var(--card); border-radius: 34px; padding: 22px 26px; min-width: 0; min-height: 0; display: flex; flex-direction: column; box-sizing: border-box; }
+.h-ai { grid-area: ai; display: flex; align-items: center; gap: 16px; text-align: left; padding: 14px 22px; border-radius: 30px; background: var(--card); min-width: 0; transition: transform .2s ease; }
+.h-ai:active { transform: scale(.985); }
+.h-ai .spark { width: 44px; height: 44px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; flex: 0 0 auto; }
+.h-ai .spark svg { width: 22px; height: 22px; fill: none; stroke: var(--on-ink); stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+.h-ai .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.h-ai b { font-weight: 500; font-size: 18px; }
+.h-ai small { color: var(--muted); font-size: 14px; line-height: 1.35; }
+.h-ai .go { color: var(--muted); font-size: 26px; flex: 0 0 auto; }
+.ai-sheet { width: min(660px, calc(100% - 24px)); height: min(86vh, 780px); max-height: calc(100% - 24px); padding: 20px 22px 18px; display: flex; flex-direction: column; gap: 12px; }
+.ai-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ai-head h2 { margin: 0; font-weight: 400; font-size: 28px; }
+.ai-close { height: 38px; padding: 0 16px; border-radius: 19px; background: var(--bg); font-size: 14px; }
+.ai-thread { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; touch-action: pan-y; padding: 2px 0 6px; }
+.ai-thread::-webkit-scrollbar { display: none; }
+.ai-msg { max-width: 92%; padding: 11px 16px; border-radius: 22px; background: var(--bg); font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; align-self: flex-start; -webkit-user-select: text; user-select: text; }
+.ai-msg.me { align-self: flex-end; background: var(--ink); color: var(--on-ink); border-bottom-right-radius: 8px; }
+.ai-msg.note { color: var(--muted); font-size: 13px; background: transparent; padding: 0 6px; }
+.ai-prop { align-self: stretch; border-radius: 24px; background: var(--bg); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.ai-prop h4 { margin: 8px 0 2px; font-weight: 400; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.ai-prop h4:first-child { margin-top: 0; }
+.ai-item { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 15px; text-align: left; width: 100%; }
+.ai-item .kc-check { width: 26px; height: 26px; }
+.ai-item .kc-check svg { width: 13px; height: 13px; stroke-dashoffset: 24; }
+.ai-item[aria-pressed="true"] .kc-check { background: var(--green); box-shadow: none; }
+.ai-item[aria-pressed="true"] .kc-check svg { stroke-dashoffset: 0; }
+.ai-item:not([aria-pressed="true"]) .tx { color: var(--muted); text-decoration: line-through; }
+.ai-item .tx { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ai-item .mt { color: var(--muted); font-size: 12px; text-align: right; flex: 0 0 auto; max-width: 42%; }
+.ai-rep { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); margin-top: 6px; }
+.ai-add { margin-top: 8px; height: 46px; border-radius: 23px; background: var(--green); color: var(--on-green); font-size: 16px; font-weight: 500; }
+.ai-add:disabled { opacity: .45; }
+.ai-composer { display: flex; flex-direction: column; gap: 8px; }
+.ai-composer .seg { align-self: flex-start; }
+.ai-composer .seg button { padding: 8px 14px; font-size: 14px; }
+.ai-row { display: flex; gap: 8px; align-items: flex-end; }
+.ai-row textarea { flex: 1; min-width: 0; min-height: 52px; max-height: 150px; resize: none; border: 0; outline: 0; border-radius: 26px; background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; line-height: 1.35; padding: 14px 18px; -webkit-user-select: text; user-select: text; box-sizing: border-box; }
+.ai-send { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; flex: 0 0 auto; }
+.ai-send:disabled { opacity: .4; }
+.ai-send svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ai-dots { display: inline-flex; gap: 4px; }
+.ai-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: aid 1s infinite ease-in-out; }
+.ai-dots i:nth-child(2) { animation-delay: .15s; } .ai-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes aid { 0%, 80%, 100% { opacity: .25; transform: none; } 40% { opacity: 1; transform: translateY(-3px); } }
 .h-label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .link { color: var(--muted); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
 .link:hover { color: var(--ink); }
@@ -800,7 +843,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .ip-grid .board-empty { grid-column: 1 / -1; }
 
 @media (max-width: 760px), (orientation: portrait) and (max-width: 900px) {
-  #app.home .home-pane { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: max-content; align-content: start; grid-template-areas: "hello" "clock" "progress" "feel" "ideas" "attn"; }
+  #app.home .home-pane { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: max-content; align-content: start; grid-template-areas: "hello" "clock" "ai" "progress" "feel" "ideas" "attn"; }
   .clock { align-items: flex-start; }
   .h-card { min-height: max-content; }
   .ed-links { gap: 12px; }
@@ -926,6 +969,16 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       </div>
     </div>
     <button class="close" data-close>Done</button>
+  </div>
+</div>
+<div class="sheet-wrap" id="aiSheet">
+  <div class="sheet ai-sheet" role="dialog" aria-label="Plan with AI">
+    <div class="ai-head"><h2>Plan with AI</h2><button type="button" class="ai-close" data-close>Close</button></div>
+    <div class="ai-thread" id="aiThread" aria-live="polite"></div>
+    <div class="ai-composer">
+      <div class="seg" id="aiTarget" role="tablist" aria-label="Where it goes"><button type="button" role="tab" data-t="both" aria-selected="true">Both</button><button type="button" role="tab" data-t="calendar" aria-selected="false">Calendar</button><button type="button" role="tab" data-t="queue" aria-selected="false">Queue</button></div>
+      <div class="ai-row"><textarea id="aiText" rows="1" placeholder="Paste a plan or describe your day…" aria-label="Your plan" enterkeyhint="send"></textarea><button type="button" class="ai-send" id="aiSend" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"/></svg></button></div>
+    </div>
   </div>
 </div>
 <div class="sheet-wrap" id="settingsSheet">
@@ -2607,6 +2660,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
         <div><div class="greet" id="hGreet"></div><div class="today-line">${DAYS[today.getDay()]} · ${MONTHS[today.getMonth()]} ${today.getDate()}</div></div>
       </div>
       <div class="clock"><div class="t" id="hClock" data-v="${c.t + c.ap}">${c.t}<span class="ap">${c.ap}</span></div></div>
+      <button type="button" class="h-ai" id="aiOpen"><span class="spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></span><span class="t"><b>Plan with AI</b><small>Paste a list or tell me what you need. I'll put it on your calendar, in your queue, or both.</small></span><span class="go">›</span></button>
       <div class="h-card progress" id="hProgress"></div>
       <div class="h-card feel" id="hFeel"></div>
       <div class="h-card ideas">
@@ -2623,6 +2677,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     $("ideaAdd").addEventListener("click", add);
     inp.addEventListener("keydown", e => { if (e.key === "Enter") add(); });
     $("ideasMore").addEventListener("click", openIdeas);
+    $("aiOpen").addEventListener("click", openAi);
   }
 
   function renderProgress() {
@@ -3278,6 +3333,168 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   }
 
   const ROLE_WORD = { parent: "a parent", sibling: "an older sibling", grandparent: "a grandparent" };
+  // ---- AI add list: paste or describe a plan, review it, and Slate files it into the calendar and/or the queue ----
+  const AI = { target: "both", turns: [], busy: false, prop: null };
+  const pad2 = n => String(n).padStart(2, "0");
+  const isoOk = v => /^\d{4}-\d{2}-\d{2}$/.test(v || "") && !isNaN(Date.parse(v));
+  const hhmmOk = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(v || "");
+  function aiAdd(role, text, cls) {
+    const d = document.createElement("div"); d.className = "ai-msg " + (cls || (role === "user" ? "me" : ""));
+    d.textContent = text; $("aiThread").appendChild(d); aiScroll(); return d;
+  }
+  const aiScroll = () => { const t = $("aiThread"); t.scrollTop = t.scrollHeight; };
+  function openAi() {
+    $("aiSheet").classList.add("open");
+    if (!$("aiThread").children.length) {
+      aiAdd("assistant", "Paste your plans or tell me what you're working out. I can fill your calendar, build your queue, or do both. You'll see everything first and pick what to add.");
+    }
+    setTimeout(() => $("aiText").focus(), 350);
+  }
+  $("aiTarget").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    AI.target = b.dataset.t;
+    $("aiTarget").querySelectorAll("button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+  }));
+  $("aiText").addEventListener("input", e => { const t = e.target; t.style.height = "auto"; t.style.height = Math.min(150, t.scrollHeight) + "px"; });
+  $("aiText").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && innerWidth > 700) { e.preventDefault(); aiSend(); } });
+  $("aiSend").addEventListener("click", aiSend);
+
+  // On-device fallback when no AI is reachable: reads times, dates and lengths out of each line
+  const WD = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+  const MONLC = MONTHS.map(m => m.slice(0, 3).toLowerCase());
+  function aiParseLocal(raw, target) {
+    const out = { reply: "", calendar: [], queue: [], replaceQueue: false };
+    const lines = raw.split(/\r?\n|;/).map(l => l.replace(/^\s*(?:[-*•·]+|\d+[.)])\s*/, "").trim()).filter(l => l && !/^[\w\s]{1,30}:$/.test(l));
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    let heading = null;
+    for (let line of lines) {
+      let date = "", time = "", mins = 0, text = line;
+      let m = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)(?![a-z])/i);
+      if (m) { let h = +m[1] % 12; if (/p/i.test(m[3])) h += 12; time = pad2(h) + ":" + (m[2] || "00"); text = text.replace(m[0], " "); }
+      else if ((m = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/))) { time = pad2(+m[1]) + ":" + m[2]; text = text.replace(m[0], " "); }
+      if ((m = text.match(/\b(\d+(?:\.\d+)?)\s*(?:hrs?|hours?)(?:\s*(?:and\s*)?(\d+)\s*(?:mins?|minutes?))?\b/i))) { mins = Math.round(+m[1] * 60 + (+m[2] || 0)); text = text.replace(m[0], " "); }
+      else if ((m = text.match(/\b(\d+)\s*(?:mins?|minutes?)\b/i))) { mins = +m[1]; text = text.replace(m[0], " "); }
+      if ((m = text.match(/\b(today|tonight|tomorrow)\b/i))) { date = keyOf(addDays(now, /tomorrow/i.test(m[1]) ? 1 : 0)); text = text.replace(m[0], " "); }
+      else if ((m = text.match(/\b(?:next\s+|this\s+)?(sun|mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?)(?:day)?\b/i))) {
+        const w = WD.findIndex(x => x.startsWith(m[1].toLowerCase().slice(0, 3))); let add = (w - now.getDay() + 7) % 7;
+        if (/next/i.test(m[0]) && add === 0) add = 7; date = keyOf(addDays(now, add)); text = text.replace(m[0], " ");
+      } else if ((m = text.match(new RegExp("\\b(" + MONLC.join("|") + ")[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b", "i")))) {
+        let d = new Date(now.getFullYear(), MONLC.indexOf(m[1].toLowerCase()), +m[2]); if (d < now) d.setFullYear(d.getFullYear() + 1); date = keyOf(d); text = text.replace(m[0], " ");
+      } else if ((m = text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/))) {
+        let y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : now.getFullYear(); let d = new Date(y, +m[1] - 1, +m[2]); if (!m[3] && d < now) d.setFullYear(d.getFullYear() + 1);
+        if (!isNaN(d)) { date = keyOf(d); text = text.replace(m[0], " "); }
+      }
+      let place = "any";
+      if (/\b(at work|office)\b/i.test(line)) place = "work"; else if (/\b(walk|errands?|gym|outside|store|groceries)\b/i.test(line)) place = "out";
+      text = text.replace(/\b(at|on|by|around|for|from|@)\s*(?=$|[,.]|\s{2,})/gi, " ").replace(/\s*[-–—:,]+\s*$/, "").replace(/^\s*[-–—:,@]+\s*/, "").replace(/\s{2,}/g, " ").trim();
+      if (!text) continue;
+      text = text.charAt(0).toUpperCase() + text.slice(1);
+      const toCal = target === "calendar" || (target === "both" && (date || time));
+      if (toCal) out.calendar.push({ text, date: date || keyOf(now), time });
+      else out.queue.push({ text, mins: mins || 15, time, place, after: "" });
+    }
+    const c = out.calendar.length, q = out.queue.length;
+    out.reply = !c && !q ? "I couldn't find anything to add. Try one item per line." : `I found ${c ? c + " for your calendar" : ""}${c && q ? " and " : ""}${q ? q + " for your queue" : ""}. (Working offline, so I sorted by times and dates in your text. Open Slate in Claude for full AI planning.)`;
+    return out;
+  }
+
+  async function aiAsk(userText) {
+    const sample = await Promise.race([getSample(), new Promise(r => setTimeout(() => r(null), 1500))]);
+    if (!sample) return { res: aiParseLocal(userText, AI.target), ai: false };
+    const nowD = new Date();
+    const steps = nextData().steps.filter(x => x.on).map(x => x.text).join(", ");
+    const sys =
+      "You are the planner inside a minimal daily planner app called Slate. The person pastes or describes plans. Turn them into items for the app.\n" +
+      `Today is ${DAYS[nowD.getDay()]} ${keyOf(nowD)}. Current time ${pad2(nowD.getHours())}:${pad2(nowD.getMinutes())}.\n` +
+      `Their current queue routine, in order: ${steps || "(empty)"}.\n` +
+      `Where items may go: ${AI.target === "both" ? "your choice per item. CALENDAR is for things on a specific date or time (appointments, deadlines, events, one-off tasks). QUEUE is the ordered routine they walk through every day." : AI.target === "calendar" ? "CALENDAR only. Leave queue empty." : "QUEUE only. Leave calendar empty."}\n` +
+      "Resolve relative dates (tomorrow, next Friday) to YYYY-MM-DD. Keep each text short and clear, under 60 characters, in the person's own words. Do not invent items they didn't ask for. Estimate mins for queue items when not given.\n" +
+      'Reply with only JSON: {"reply":"one or two friendly sentences saying what you did or asking one short question if something is unclear","calendar":[{"text":"","date":"YYYY-MM-DD","time":"HH:MM or empty"}],"queue":[{"text":"","mins":15,"time":"HH:MM or empty","place":"any|home|work|out","after":"name of an existing routine step to place it after, or empty"}],"replaceQueue":false}\n' +
+      "Set replaceQueue true only if they ask to replace or rebuild their whole routine.";
+    const turns = AI.turns.slice(-6).concat([{ role: "user", content: userText.slice(0, 6000) }]);
+    turns[0] = { role: turns[0].role, content: sys + "\n\n---\n\n" + turns[0].content };
+    if (turns[0].role !== "user") turns.unshift({ role: "user", content: sys });
+    const r = await sample.json(turns, { modelTier: "default", cache: false });
+    return { res: r, ai: true };
+  }
+
+  async function aiSend() {
+    const ta = $("aiText"), raw = ta.value.trim();
+    if (!raw || AI.busy) return;
+    AI.busy = true; $("aiSend").disabled = true;
+    aiAdd("user", raw.length > 700 ? raw.slice(0, 700) + "…" : raw);
+    ta.value = ""; ta.style.height = "auto";
+    const wait = document.createElement("div"); wait.className = "ai-msg"; wait.innerHTML = '<span class="ai-dots"><i></i><i></i><i></i></span>'; $("aiThread").appendChild(wait); aiScroll();
+    let out;
+    try { out = await aiAsk(raw); }
+    catch (e) { out = { res: aiParseLocal(raw, AI.target), ai: false, err: true }; }
+    wait.remove();
+    const r = out.res || {};
+    const cal = (Array.isArray(r.calendar) ? r.calendar : []).filter(x => x && typeof x.text === "string" && x.text.trim() && AI.target !== "queue").slice(0, 60)
+      .map(x => ({ text: x.text.trim().slice(0, 80), date: isoOk(x.date) ? x.date : keyOf(new Date()), time: hhmmOk(x.time) ? x.time : "", on: true }));
+    const que = (Array.isArray(r.queue) ? r.queue : []).filter(x => x && typeof x.text === "string" && x.text.trim() && AI.target !== "calendar").slice(0, 60)
+      .map(x => ({ text: x.text.trim().slice(0, 80), mins: Math.max(1, Math.min(600, Math.round(+x.mins) || 15)), time: hhmmOk(x.time) ? x.time : "", place: PLACES[x.place] ? x.place : "any", after: typeof x.after === "string" ? x.after.trim() : "", on: true }));
+    AI.turns.push({ role: "user", content: raw.slice(0, 6000) }, { role: "assistant", content: JSON.stringify({ reply: r.reply || "", calendar: cal.map(({ on, ...c }) => c), queue: que.map(({ on, ...c }) => c) }) });
+    if (out.err) aiAdd("assistant", "I couldn't reach the AI just now, so I sorted your list on this device instead.", "note");
+    aiAdd("assistant", (typeof r.reply === "string" && r.reply.trim()) || (cal.length + que.length ? "Here's what I'd add." : "I couldn't find anything to add."));
+    if (cal.length || que.length) aiProposal(cal, que, !!r.replaceQueue && AI.target !== "calendar");
+    AI.busy = false; $("aiSend").disabled = false; ta.focus();
+  }
+
+  function aiProposal(cal, que, replace) {
+    const box = document.createElement("div"); box.className = "ai-prop";
+    const rowHtml = (x, i, kind) => {
+      const meta = kind === "c" ? [x.date !== keyOf(new Date()) ? shortDate(dateOf(x.date)) : "Today", x.time ? fmtTime(x.time) : ""].filter(Boolean).join(" · ")
+        : [x.after ? "after " + x.after : "", x.time ? fmtTime(x.time) : "", nxLen(x.mins), x.place !== "any" ? PLACES[x.place] : ""].filter(Boolean).join(" · ");
+      return `<button type="button" class="ai-item" aria-pressed="true" data-k="${kind}" data-i="${i}"><span class="kc-check">${CHECK}</span><span class="tx">${esc(x.text)}</span><span class="mt">${esc(meta)}</span></button>`;
+    };
+    box.innerHTML = (cal.length ? `<h4>Calendar</h4>` + cal.map((x, i) => rowHtml(x, i, "c")).join("") : "") +
+      (que.length ? `<h4>Queue</h4>` + que.map((x, i) => rowHtml(x, i, "q")).join("") : "") +
+      (que.length ? `<label class="ai-rep"><button type="button" class="tgl${replace ? " on" : ""}" role="switch" aria-checked="${replace}" id="aiRepTgl"></button><span>Replace my whole routine with this queue</span></label>` : "") +
+      `<button type="button" class="ai-add">Add to Slate</button>`;
+    let rep = replace;
+    box.querySelectorAll(".ai-item").forEach(b => b.addEventListener("click", () => {
+      const x = (b.dataset.k === "c" ? cal : que)[+b.dataset.i]; x.on = !x.on; b.setAttribute("aria-pressed", String(x.on));
+      const n = cal.filter(y => y.on).length + que.filter(y => y.on).length; add.disabled = !n; add.textContent = n ? `Add ${n} to Slate` : "Nothing selected";
+    }));
+    const tg = box.querySelector("#aiRepTgl"); if (tg) tg.addEventListener("click", () => { rep = !rep; tg.classList.toggle("on", rep); tg.setAttribute("aria-checked", String(rep)); });
+    const add = box.querySelector(".ai-add"); add.textContent = `Add ${cal.length + que.length} to Slate`;
+    add.addEventListener("click", () => {
+      add.disabled = true;
+      const res = aiApply(cal.filter(x => x.on), que.filter(x => x.on), rep);
+      box.querySelectorAll(".ai-item").forEach(b => b.disabled = true);
+      add.textContent = "Added";
+      const bits = [];
+      if (res.cal) bits.push(`${res.cal} on your calendar`); if (res.que) bits.push(`${res.que} in your queue`);
+      aiAdd("assistant", (bits.length ? "Done. Added " + bits.join(" and ") + "." : "Those were already there, so nothing new was added.") + (res.skipped ? ` Skipped ${res.skipped} you already had.` : ""), "note");
+    });
+    $("aiThread").appendChild(box); aiScroll();
+  }
+
+  function aiApply(cal, que, replace) {
+    let nc = 0, nq = 0, skipped = 0;
+    cal.forEach(x => {
+      const arr = tasksAt(x.date);
+      if (arr.some(t => t.text.trim().toLowerCase() === x.text.toLowerCase() && (t.t || "") === (x.time || ""))) { skipped++; return; }
+      const task = { t: x.time || "", text: x.text, done: false };
+      arr.splice(undoneCount(arr), 0, task); placeByTime(arr, task); nc++;
+    });
+    if (que.length) {
+      const N = nextData();
+      if (replace) N.steps = [];
+      const steps = N.steps;
+      que.forEach(x => {
+        if (steps.some(s => s.text.trim().toLowerCase() === x.text.toLowerCase())) { skipped++; return; }
+        const st = { id: uid(), text: x.text, mins: x.mins, t: x.time || "", place: x.place, on: true };
+        let at = x.after ? steps.findIndex(s => s.text.toLowerCase().includes(x.after.toLowerCase())) + 1 : 0;
+        if (!at) { const bed = steps.findIndex(s => /^bed\b/i.test(s.text)); at = bed >= 0 && !replace ? bed : steps.length; }
+        steps.splice(at, 0, st); nq++;
+      });
+    }
+    save();
+    if (view === "week") buildWeek(); else if (view === "month") refreshMonth(); else if (view === "home") render(false); else if (view === "next") renderNext(); else if (view !== "kids") refreshList();
+    return { cal: nc, que: nq, skipped };
+  }
+
   // ---- Next: the whole day as one queue ----
   const NEXT_STARTER = [["Wake up",1],["Brush teeth",3],["Drink water",1],["Get dressed",10],["Eat breakfast",20],["Take vitamins",1,"any",false],["Workout",45],["Shower",15],["Work",240,"work"],["Lunch",30],["Walk",20,"out"],["Work",180,"work"],["Dinner",45],["Clean kitchen",15],["Relax",60],["Prepare tomorrow",15],["Bed",1]];
   const nextStarter = () => NEXT_STARTER.map(([text, mins, place, on]) => ({ id: uid(), text, mins, t: "", place: place || "any", on: on !== false }));
