@@ -862,7 +862,6 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <h2>Settings</h2>
     <button class="opt" id="acctOpt"><span>Account</span><span id="acctVal" style="color:var(--muted)">Sign in</span></button>
     <button class="opt" id="themeOpt"><span>Appearance</span><span id="themeVal" style="color:var(--muted)">System</span></button>
-    <button class="opt" id="bgOpt"><span>Background</span><span id="bgVal" style="color:var(--muted)">None</span></button>
     <button class="opt" id="styleOpt"><span>Style</span><span id="styleVal" style="color:var(--muted)">Classic</span></button>
     <button class="opt" id="clearOpt"><span id="clearLbl">Clear this day</span><span id="clearVal" style="color:var(--muted)">›</span></button>
     <button class="opt" id="clearCalOpt"><span>Clear calendar</span><span id="clearCalVal" style="color:var(--muted)">›</span></button>
@@ -2296,7 +2295,6 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   const bgVid = $("bgVid");
   const applyBg = () => {
     const b = BGS[bgIdx], root = document.documentElement;
-    $("bgVal").textContent = b;
     if (b === "None") {
       root.removeAttribute("data-bg"); bgVid.pause(); bgVid.removeAttribute("src"); bgVid.removeAttribute("poster"); bgVid.load();
     } else {
@@ -2316,10 +2314,6 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     if (!document.documentElement.hasAttribute("data-bg") || !bgVid.getAttribute("src")) return;
     if (document.hidden) bgVid.pause(); else { const pl = bgVid.play(); if (pl && pl.catch) pl.catch(() => {}); }
   });
-  $("bgOpt").addEventListener("click", () => {
-    bgIdx = (bgIdx + 1) % BGS.length; applyBg();
-    try { localStorage.setItem("slate.bg", BGS[bgIdx]); } catch (e) {}
-  });
 
   const themes = ["System", "Light", "Dark"];
   let themeIdx = 0;
@@ -2328,7 +2322,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const t = themes[themeIdx];
     if (t === "System") document.documentElement.removeAttribute("data-theme");
     else document.documentElement.setAttribute("data-theme", t.toLowerCase());
-    $("themeVal").textContent = t;
+    $("themeVal").textContent = bgIdx ? BGS[bgIdx] : t;
     syncStatusBar();
   };
   // The installed app's status bar takes this color, so it always matches the screen
@@ -2346,8 +2340,12 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncStatusBar); } catch (e) {}
   applyTheme(); applyBg();
   $("themeOpt").addEventListener("click", () => {
-    themeIdx = (themeIdx + 1) % 3; applyTheme();
-    try { localStorage.setItem("slate.theme", themes[themeIdx]); } catch (e) {}
+    // System, Light, Dark, then the Sky and Ocean glass looks
+    if (bgIdx) { bgIdx = (bgIdx + 1) % BGS.length; if (!bgIdx) themeIdx = 0; }
+    else if (themeIdx < 2) themeIdx++;
+    else bgIdx = 1;
+    applyTheme(); applyBg();
+    try { localStorage.setItem("slate.theme", themes[themeIdx]); localStorage.setItem("slate.bg", BGS[bgIdx]); } catch (e) {}
   });
   let clearDayTimer = 0;
   const resetClearDay = () => { const b = $("clearOpt"); b.dataset.confirm = ""; b.classList.remove("danger-confirm"); $("clearVal").textContent = "›"; $("clearVal").style.color = ""; };
