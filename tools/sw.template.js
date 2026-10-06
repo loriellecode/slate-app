@@ -9,6 +9,7 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) return;
+  if (e.request.destination === "video" || e.request.headers.has("range")) return; // let the browser stream video itself
   e.respondWith(
     fetch(e.request, { cache: "no-cache" })
       .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; })
