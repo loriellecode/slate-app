@@ -387,7 +387,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
 /* Month and year at the bottom of the big-date calendar */
 .month-foot { display: none; position: fixed; left: clamp(16px, 3vw, 40px); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); pointer-events: none; transition: opacity .4s ease; }
-#app:not(.b):not(.week):not(.month):not(.home):not(.kids) ~ .month-foot { display: block; }
+#app:not(.b):not(.week):not(.month):not(.home):not(.kids):not(.next) ~ .month-foot { display: block; }
 @media (max-width: 560px) { .hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 34px); } }
 
 /* ---------- Account ---------- */
@@ -425,7 +425,11 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 /* ---------- Kids Center ---------- */
 .icon-btn .bg { fill: var(--card); transition: fill .35s ease; }
 .icon-btn.on .bg { fill: var(--ink); }
-.kids-pane { display: none; }
+.kids-pane, .next-pane { display: none; }
+#app.next main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "next"; }
+#app.next .day-pane, #app.next .list-pane, #app.next .week-pane, #app.next .routines, #app.next .home-pane, #app.next .month-pane, #app.next .kids-pane { display: none; }
+#app.next .next-pane { grid-area: next; display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow-y: auto; touch-action: pan-y; scrollbar-width: none; }
+.next-pane::-webkit-scrollbar { display: none; }
 #app.kids main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "kids"; }
 #app.kids .day-pane, #app.kids .list-pane, #app.kids .week-pane, #app.kids .routines, #app.kids .home-pane, #app.kids .month-pane { display: none; }
 #app.kids .kids-pane { grid-area: kids; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
@@ -531,6 +535,43 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .hist-now { font-size: 12px; letter-spacing: .04em; color: var(--muted); }
 .hist-now.on { color: var(--green); }
 .hist-chores { font-size: 14px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+/* Next: the day as a queue */
+.nx-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 16px; }
+.nx-now { justify-content: flex-start; }
+.nx-bar { height: 6px; border-radius: 3px; background: var(--line); margin-top: 14px; overflow: hidden; }
+.nx-bar i { display: block; height: 100%; background: var(--green); border-radius: 3px; transition: width .7s var(--ease); }
+.nx-big { font-size: clamp(34px, 5.2vw, 68px); line-height: 1.04; letter-spacing: -.015em; margin-top: auto; padding-top: 28px; text-wrap: balance; overflow-wrap: anywhere; }
+.nx-meta { margin-top: 12px; color: var(--muted); font-size: 16px; letter-spacing: .02em; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.nx-meta .late { color: var(--warn); }
+.nx-gap { margin-top: 16px; padding: 12px 16px; border-radius: 20px; background: var(--bg); font-size: 15px; line-height: 1.4; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.nx-gap button { height: 36px; padding: 0 16px; border-radius: 18px; background: var(--ink); color: var(--bg); font-size: 14px; }
+.nx-act { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+.nx-act .kc-send { min-width: 140px; height: 54px; border-radius: 27px; font-size: 17px; }
+.nx-act .ed-here { height: 54px; border-radius: 27px; }
+.nx-queue .kc-list { touch-action: pan-y; }
+.nx-sec { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: 10px 4px 0; }
+.nx-item[role="button"] { cursor: pointer; }
+.nx-item.dim { opacity: .5; }
+.nx-item .kc-time { margin-left: auto; font-variant-numeric: tabular-nums; }
+.nx-item .kc-mine { margin-left: 6px; }
+.nx-hint { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 10px 0 0; max-width: 60ch; }
+.nx-erow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; background: var(--bg); border-radius: 26px; padding: 8px 10px 8px 10px; }
+.nx-erow.off .nx-t { color: var(--muted); text-decoration: line-through; }
+.nx-erow .nx-t { flex: 1 1 150px; min-width: 0; height: 40px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 16px; outline: none; padding: 0 4px; }
+.nx-erow .nx-mini { height: 34px; border: 0; border-radius: 17px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; padding: 0 12px; outline: none; }
+.nx-erow input.nx-mins { width: 74px; }
+.nx-erow input[type=time].nx-mini { width: 118px; }
+.nx-erow select.nx-mini { width: 112px; }
+.nx-erow .nx-btn { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--card); flex: 0 0 auto; }
+.nx-erow .nx-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.nx-erow .nx-btn:disabled { opacity: .35; }
+.nx-foot { margin-top: 14px; }
+.nx-foot .ed-here.armed { background: var(--red); color: #fff; }
+@media (max-width: 760px), (orientation: portrait) and (max-width: 900px) {
+  .nx-body { grid-template-columns: minmax(0, 1fr); grid-auto-rows: max-content; }
+  .nx-big { padding-top: 18px; }
+  .nx-queue .kc-list { max-height: none; overflow: visible; }
+}
 .ed-links { display: flex; gap: 16px; flex: 0 0 auto; }
 .ed-links .link, .h-label > span:first-child { white-space: nowrap; }
 .kc-tubes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
@@ -719,6 +760,9 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       <button class="icon-btn" id="homeBtn" aria-label="Home" aria-pressed="false">
         <svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5"/><path d="M6 9v10.5h4.5v-5.5h3v5.5H18V9"/></svg>
       </button>
+      <button class="icon-btn" id="nextBtn" aria-label="Next: your day as a queue" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M4.5 7h8M4.5 12h8M4.5 17h5"/><path d="M15.5 8.2l4.6 3.8-4.6 3.8z"/></svg>
+      </button>
     </div>
     <div class="label" id="label"></div>
     <div class="icons right">
@@ -744,6 +788,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <section class="home-pane" id="homePane"></section>
     <section class="month-pane" id="monthPane"></section>
     <section class="kids-pane" id="kidsPane"></section>
+    <section class="next-pane" id="nextPane"></section>
     <aside class="routines" id="routines">
       <div class="r-head">
         <h2>Routines</h2>
@@ -1055,7 +1100,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
   // ---------- elements ----------
   const $ = id => document.getElementById(id);
-  const app = $("app"), main = $("main"), dayPane = $("dayPane"), listPane = $("listPane"), weekPane = $("weekPane"), homePane = $("homePane"), monthPane = $("monthPane"), kidsPane = $("kidsPane"), label = $("label"), hint = $("hint");
+  const app = $("app"), main = $("main"), dayPane = $("dayPane"), listPane = $("listPane"), weekPane = $("weekPane"), homePane = $("homePane"), monthPane = $("monthPane"), kidsPane = $("kidsPane"), nextPane = $("nextPane"), label = $("label"), hint = $("hint");
   const rList = $("rList"), rSearch = $("rSearch"), rSearchInput = $("rSearchInput");
 
   // Calendar button cycles a → b → week; Home is its own page
@@ -1065,7 +1110,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   try {
     const c = localStorage.getItem("slate.cal"); if (CAL_VIEWS.includes(c)) calView = c;
     if (calView === "b") lastDayLayout = "b";
-    const v = localStorage.getItem("slate.view"); view = v === "home" || v === "kids" ? v : calView;
+    const v = localStorage.getItem("slate.view"); view = v === "home" || v === "kids" || v === "next" ? v : calView;
   } catch (e) {}
   const applyViewClasses = () => {
     app.classList.toggle("b", view === "b");
@@ -1073,12 +1118,15 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     app.classList.toggle("home", view === "home");
     app.classList.toggle("month", view === "month");
     app.classList.toggle("kids", view === "kids");
+    app.classList.toggle("next", view === "next");
+    $("nextBtn").classList.toggle("on", view === "next");
+    $("nextBtn").setAttribute("aria-pressed", view === "next");
     $("kidsBtn").classList.toggle("on", view === "kids");
     $("kidsBtn").setAttribute("aria-pressed", view === "kids");
     $("homeBtn").classList.toggle("on", view === "home");
     $("homeBtn").setAttribute("aria-pressed", view === "home");
     hint.textContent = view === "week" ? "Swipe up for next week" : view === "month" ? "Swipe up for next month" : "Swipe up for tomorrow";
-    if (view === "home" || view === "kids") hint.style.opacity = 0; else if (!hintGone) hint.style.opacity = 1;
+    if (view === "home" || view === "kids" || view === "next") hint.style.opacity = 0; else if (!hintGone) hint.style.opacity = 1;
   };
   applyViewClasses();
 
@@ -1087,7 +1135,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
   function labelText(d) {
     if (view === "home") return "Slate";
-    if (view === "kids") return "Slate";
+    if (view === "kids" || view === "next") return "Slate";
     if (view === "month") return MONTHS[d.getMonth()] + " " + d.getFullYear();
     if (view === "week") {
       const s = weekStart(d), e = addDays(s, 6);
@@ -1380,9 +1428,10 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
   // ---------- render ----------
   function render(animate) {
-    dayPane.replaceChildren(); listPane.replaceChildren(); weekPane.replaceChildren(); monthPane.replaceChildren(); kidsPane.replaceChildren();
+    dayPane.replaceChildren(); listPane.replaceChildren(); weekPane.replaceChildren(); monthPane.replaceChildren(); kidsPane.replaceChildren(); nextPane.replaceChildren();
     if (view === "home") buildHome();
     else if (view === "kids") buildKids();
+    else if (view === "next") buildNext();
     else if (view === "month") monthPane.appendChild(buildMonth(current));
     else if (view === "week") buildWeek();
     else { dayPane.replaceChildren(buildFace(current)); listPane.replaceChildren(buildList(current)); }
@@ -1398,6 +1447,10 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     }
     if (view === "kids") {
       staggerIn(kidsPane.querySelectorAll(".kc-top, .kc-banner, .h-card"), dir, base);
+      return;
+    }
+    if (view === "next") {
+      staggerIn(nextPane.querySelectorAll(".kc-top, .h-card"), dir, base);
       return;
     }
     if (view === "month") {
@@ -1427,7 +1480,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   ];
 
   function go(dir, target) {
-    if (busy || drag || view === "home" || view === "kids") return;
+    if (busy || drag || view === "home" || view === "kids" || view === "next") return;
     if (view === "week") return goWeek(dir, target);
     if (view === "month") return goMonth(dir, target);
     busy = true;
@@ -1574,7 +1627,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
   // ---------- accents ----------
   const ACCENTS = [
-    { id: "label", name: "Date at the top", sel: ".label", views: ["b", "week", "month", "home", "kids"] },
+    { id: "label", name: "Date at the top", sel: ".label", views: ["b", "week", "month", "home", "kids", "next"] },
     { id: "kids", name: "Kids Center title", sel: ".kc-title", views: ["kids"] },
     { id: "monthfoot", name: "Month at the bottom", sel: ".month-foot", views: ["a"] },
     { id: "weekday", name: "Day name", sel: ".weekday", views: ["a", "b"] },
@@ -1801,7 +1854,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     main.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.985)" }], { duration: 260, easing: EASE, fill: "forwards" })
       .onfinish = () => {
         view = next;
-        if (next !== "home" && next !== "kids") calView = next;
+        if (next !== "home" && next !== "kids" && next !== "next") calView = next;
         if (next === "a" || next === "b") lastDayLayout = next;
         try { localStorage.setItem("slate.cal", calView); localStorage.setItem("slate.view", view); } catch (e) {}
         applyViewClasses();
@@ -1815,11 +1868,12 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       };
   }
   $("layoutBtn").addEventListener("click", () => {
-    if (view === "home" || view === "kids") return switchView(calView);
+    if (view === "home" || view === "kids" || view === "next") return switchView(calView);
     switchView(CAL_VIEWS[(CAL_VIEWS.indexOf(view) + 1) % CAL_VIEWS.length]);
   });
   $("homeBtn").addEventListener("click", () => switchView(view === "home" ? calView : "home"));
   $("kidsBtn").addEventListener("click", () => switchView(view === "kids" ? calView : "kids"));
+  $("nextBtn").addEventListener("click", () => switchView(view === "next" ? calView : "next"));
 
   // ---------- routines ----------
   function buildRoutines() {
@@ -2016,7 +2070,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       startY = null;
       return;
     }
-    if (e.target.closest(".sheet-wrap, .routines, .list.scrolls, .wk-list.scrolls, .wk-add, .home-pane, .ideas-page, .side-panel, .kids-pane, .toast")) { startY = null; return; }
+    if (e.target.closest(".sheet-wrap, .routines, .list.scrolls, .wk-list.scrolls, .wk-add, .home-pane, .ideas-page, .side-panel, .kids-pane, .next-pane, .toast")) { startY = null; return; }
     fromInput = !!e.target.closest("input");
     startY = e.clientY; startX = e.clientX; startT = performance.now();
   });
@@ -2078,7 +2132,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
   let wheelAcc = 0, wheelTimer;
   document.addEventListener("wheel", e => {
-    if (e.target.closest(".sheet-wrap, .routines, .list.scrolls, .wk-list.scrolls, .home-pane, .ideas-page, .side-panel, .kids-pane")) return;
+    if (e.target.closest(".sheet-wrap, .routines, .list.scrolls, .wk-list.scrolls, .home-pane, .ideas-page, .side-panel, .kids-pane, .next-pane")) return;
     wheelAcc += e.deltaY; clearTimeout(wheelTimer);
     wheelTimer = setTimeout(() => wheelAcc = 0, 180);
     if (Math.abs(wheelAcc) > 80) { go(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; }
@@ -2099,6 +2153,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   $("addBtn").addEventListener("click", () => {
     if (view === "home") { $("ideaInput")?.focus(); return; }
     if (view === "kids") { ($("hwText") || $("choreText") || $("kidName"))?.focus(); return; }
+    if (view === "next") { nxEditing = true; renderNext(); $("nxAdd")?.focus(); return; }
     if (view === "month") { openMonthDay(keyOf(current)); setTimeout(() => $("mdInput").focus(), 300); return; }
     if (view === "week") {
       const s = weekStart(current);
@@ -2232,7 +2287,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     clearTimeout(clearCalTimer); b.dataset.confirm = ""; b.classList.remove("danger-confirm"); v.textContent = "›"; v.style.color = "";
     Object.keys(store).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).forEach(k => { delete store[k]; });
     save(); $("settingsSheet").classList.remove("open");
-    if (view === "week") buildWeek(); else if (view === "month") refreshMonth(); else if (view === "home") render(false); else if (view === "kids") { /* nothing on screen to refresh */ } else refreshList();
+    if (view === "week") buildWeek(); else if (view === "month") refreshMonth(); else if (view === "home") render(false); else if (view === "kids") { /* nothing on screen to refresh */ } else if (view === "next") renderNext(); else refreshList();
     showToast({ text: "Your calendar is cleared." });
   });
   $("settingsBtn").addEventListener("click", () => {
@@ -2925,6 +2980,224 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   }
 
   const ROLE_WORD = { parent: "a parent", sibling: "an older sibling", grandparent: "a grandparent" };
+  // ---- Next: the whole day as one queue ----
+  const NEXT_STARTER = [["Wake up",1],["Brush teeth",3],["Drink water",1],["Get dressed",10],["Eat breakfast",20],["Take vitamins",1,"any",false],["Workout",45],["Shower",15],["Work",240,"work"],["Lunch",30],["Walk",20,"out"],["Work",180,"work"],["Dinner",45],["Clean kitchen",15],["Relax",60],["Prepare tomorrow",15],["Bed",1]];
+  const nextStarter = () => NEXT_STARTER.map(([text, mins, place, on]) => ({ id: uid(), text, mins, t: "", place: place || "any", on: on !== false }));
+  const PLACES = { any: "Anywhere", home: "Home", work: "Work", out: "Out" };
+  let nxEditing = false;
+
+  function nextData() {
+    let made = false;
+    if (!store.__next || typeof store.__next !== "object") { store.__next = {}; made = true; }
+    const N = store.__next;
+    if (!Array.isArray(N.steps)) { N.steps = nextStarter(); made = true; }
+    N.done ||= {}; N.skip ||= {}; N.focus ||= {}; N.awake ||= {};
+    if (!PLACES[N.place]) N.place = "any";
+    if (made) save();
+    return N;
+  }
+  const nxMin = t => { const [h, m] = String(t).split(":").map(Number); return (h || 0) * 60 + (m || 0); };
+  const nxClock = m => { m = Math.round(m); return fmtTime(String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0")); };
+  const nxLen = m => m >= 60 ? (Math.floor(m / 60) + " hr" + (m % 60 ? " " + (m % 60) + " min" : "")) : (m <= 1 ? "a moment" : m + " min");
+
+  // Works out what comes next from the clock, the calendar, where you are and what's already done.
+  function nextPlan() {
+    const N = nextData(), nowD = new Date(), key = keyOf(nowD);
+    const now = nowD.getHours() * 60 + nowD.getMinutes();
+    const done = N.done[key] || {}, skip = N.skip[key] || {};
+    const arr = store[key] || [];
+    const appts = arr.map((task, ai) => ({ kind: "appt", task, ai, text: task.text, mins: 30, start: task.t ? nxMin(task.t) : 0 })).filter(a => a.task.t);
+    const openA = appts.filter(a => !a.task.done).sort((a, b) => a.start - b.start);
+    const pendingA = openA.filter(a => a.start + 60 >= now), staleA = openA.filter(a => a.start + 60 < now);
+    const doneA = appts.filter(a => a.task.done);
+    const active = N.steps.filter(s => s.on);
+    const mine = s => N.place === "any" || s.place === "any" || s.place === N.place;
+    const awakeAt = N.awake[key], isWake = s => /^wake/i.test(s.text);
+    const asleep = awakeAt == null && !active.some(s => done[s.id]);
+    const todo = active.filter(s => !done[s.id] && !skip[s.id] && !(asleep && isWake(s)));
+    let steps = todo.filter(mine);
+    const elsewhere = todo.filter(s => !mine(s));
+    const f = N.focus[key], fi = steps.findIndex(s => s.id === f);
+    if (fi > 0) steps = [steps[fi], ...steps.slice(0, fi), ...steps.slice(fi + 1)];
+    const queue = []; let ai = 0;
+    // first task starts a few minutes after you wake; it slides later while you haven't started
+    let cur = Math.ceil(Math.max(now, awakeAt != null ? awakeAt + 5 : now + 5) / 5) * 5;
+    const flushA = () => { while (ai < pendingA.length && pendingA[ai].start <= cur) { const a = pendingA[ai++]; queue.push({ ...a, est: Math.max(cur, a.start), late: a.start < now - 1 }); cur = Math.max(cur, a.start) + a.mins; } };
+    for (const s of steps) {
+      flushA();
+      const start = s.t ? Math.max(cur, nxMin(s.t)) : cur;
+      queue.push({ kind: "step", step: s, id: s.id, text: s.text, mins: s.mins, est: start });
+      cur = start + (s.mins || 1);
+    }
+    flushA();
+    while (ai < pendingA.length) { const a = pendingA[ai++]; queue.push({ ...a, est: a.start, late: a.start < now - 1 }); }
+    for (const a of staleA) queue.push({ ...a, est: a.start, late: true });
+    // time until the next appointment, and a quick step that fits before it
+    const head = queue[0], nextAppt = queue.find((q, i) => q.kind === "appt" && i > 0) || (head && head.kind === "appt" ? null : null);
+    let gap = null, suggest = null;
+    if (head && head.kind === "step" && nextAppt) {
+      gap = nextAppt.start - now;
+      if (gap > 0 && head.mins > gap) suggest = queue.find(q => q.kind === "step" && q !== head && q.mins <= gap) || null;
+    }
+    const doneItems = [...active.filter(s => done[s.id]).map(s => ({ kind: "step", id: s.id, text: s.text })), ...doneA.map(a => ({ kind: "appt", ai: a.ai, text: a.text }))];
+    const skippedItems = active.filter(s => skip[s.id] && !done[s.id]);
+    const total = active.length + appts.length;
+    return { N, key, now, asleep, wakeId: (active.find(isWake) || {}).id, queue, doneItems, skippedItems, elsewhere, gap, nextAppt, suggest, total, finished: doneItems.length };
+  }
+
+  function buildNext() {
+    const N = nextData();
+    nextPane.innerHTML = `
+      <div class="kc-top">
+        <div class="kc-hello">
+          <div class="kc-title">Next</div>
+          <div class="kc-sub" id="nxSub"></div>
+        </div>
+        <div class="kc-tubes">
+          <div class="seg" id="nxPlace" role="tablist" aria-label="Where you are">${Object.entries(PLACES).map(([v, l]) => `<button type="button" role="tab" data-p="${v}" aria-selected="${N.place === v}">${l}</button>`).join("")}</div>
+          <button type="button" class="ed-here" id="nxEdit"></button>
+        </div>
+      </div>
+      <div class="nx-body" id="nxBody"></div>`;
+    $("nxPlace").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+      const N2 = nextData(); if (N2.place === b.dataset.p) return;
+      N2.place = b.dataset.p; save();
+      $("nxPlace").querySelectorAll("button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+      renderNext();
+    }));
+    $("nxEdit").addEventListener("click", () => { nxEditing = !nxEditing; renderNext(); });
+    renderNext();
+  }
+
+  function renderNext() {
+    const body = $("nxBody"); if (!body) return;
+    const P = nextPlan(), N = P.N;
+    $("nxEdit").textContent = nxEditing ? "Done editing" : "Edit routine";
+    $("nxPlace").hidden = nxEditing;
+    $("nxSub").textContent = nxEditing ? "Set the order. Slate walks you through it." : (P.queue.length ? `${P.finished} of ${P.total} done today` : (P.total ? "That's your whole day." : "Nothing in the queue."));
+    if (nxEditing) { renderNextEdit(body, N); return; }
+    const head = P.queue[0];
+    const pct = P.total ? Math.round(P.finished / P.total * 100) : 0;
+    let now;
+    if (P.asleep) {
+      now = `<div class="h-card kc-card nx-now">
+        <div class="h-label"><span>Now</span><span>${nxClock(P.now)}</span></div>
+        <div class="nx-bar"><i style="width:0"></i></div>
+        <div class="nx-big">Good morning</div>
+        <div class="nx-meta"><span>Tap when you're up. Slate plans your day from there and keeps the times moving.</span></div>
+        <div class="nx-act"><button type="button" class="kc-send" id="nxAwake">I'm awake</button></div>
+      </div>`;
+    } else if (head) {
+      const isA = head.kind === "appt";
+      const meta = [];
+      if (isA) meta.push(head.late ? `<span class="late">Started ${nxClock(head.start)}</span>` : `<span>At ${nxClock(head.start)}</span>`, "<span>Appointment</span>");
+      else meta.push(`<span>${head.est > P.now + 1 ? "Start around " + nxClock(head.est) : "Start now"}</span>`, `<span>About ${nxLen(head.mins)}</span>`);
+      if (!isA && head.step.place !== "any") meta.push(`<span>${PLACES[head.step.place]}</span>`);
+      let gapHtml = "";
+      if (P.gap != null && P.gap > 0) gapHtml = `<div class="nx-gap"><span>${nxLen(P.gap)} until ${esc(P.nextAppt.text)}${P.suggest ? ` — a quick one fits: ${esc(P.suggest.text)}` : ""}</span>${P.suggest ? `<button type="button" id="nxQuick" data-id="${P.suggest.id}">Do it now</button>` : ""}</div>`;
+      now = `<div class="h-card kc-card nx-now">
+        <div class="h-label"><span>Now</span><span>${nxClock(P.now)}</span></div>
+        <div class="nx-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+        <div class="nx-big">${esc(head.text)}</div>
+        <div class="nx-meta">${meta.join("")}</div>
+        ${gapHtml}
+        <div class="nx-act"><button type="button" class="kc-send" id="nxDone">Done</button>${isA ? "" : '<button type="button" class="ed-here" id="nxSkip">Skip</button>'}</div>
+      </div>`;
+    } else {
+      const left = P.elsewhere.length;
+      now = `<div class="h-card kc-card nx-now">
+        <div class="h-label"><span>Now</span><span>${nxClock(P.now)}</span></div>
+        <div class="nx-bar"><i style="width:${pct}%"></i></div>
+        <div class="nx-big">${P.total ? (left ? "Nothing here" : "All done") : "Add your routine"}</div>
+        <div class="nx-meta"><span>${left ? `${left} step${left > 1 ? "s" : ""} wait for another place. Switch place above.` : (P.total ? "Rest well. Tomorrow starts fresh." : "Tap Edit routine to build your day.")}</span></div>
+      </div>`;
+    }
+    const row = (q, i) => `<button type="button" class="kc-item nx-item" data-act="focus" data-i="${i}"${i === 0 ? ' aria-current="true"' : ""}><span class="kc-text">${esc(q.text)}</span>${q.kind === "appt" ? '<span class="kc-mine">Appt</span>' : ""}<span class="kc-time">${nxClock(q.est)}</span></button>`;
+    let list = P.queue.length > 1 ? P.queue.slice(1).map((q, i) => row(q, i + 1)).join("") : '<div class="kc-empty">Nothing else waiting.</div>';
+    if (P.elsewhere.length) list += `<div class="nx-sec">Other places</div>` + P.elsewhere.map(s => `<div class="kc-item nx-item dim"><span class="kc-text">${esc(s.text)}</span><span class="kc-mine">${PLACES[s.place]}</span></div>`).join("");
+    if (P.skippedItems.length) list += `<div class="nx-sec">Skipped</div>` + P.skippedItems.map(s => `<button type="button" class="kc-item nx-item dim" data-act="unskip" data-id="${s.id}"><span class="kc-text">${esc(s.text)}</span><span class="kc-time">Bring back</span></button>`).join("");
+    if (P.doneItems.length) list += `<div class="nx-sec">Done</div>` + P.doneItems.map(d => `<button type="button" class="kc-item nx-item done dim" data-act="undo" data-kind="${d.kind}" data-id="${d.id || ""}" data-ai="${d.ai ?? ""}"><span class="kc-check">${CHECK}</span><span class="kc-text">${esc(d.text)}</span><span class="kc-time">Undo</span></button>`).join("");
+    body.innerHTML = now + `<div class="h-card kc-card nx-queue"><div class="h-label"><span>Up next</span><span>${Math.max(0, P.queue.length - 1)}</span></div><div class="kc-list scrolls">${list}</div><p class="nx-hint">Slate orders the day by your routine, the clock, your calendar and what you've finished. Tap a step to do it first.</p></div>`;
+    const key = P.key;
+    const doDone = (q) => {
+      if (q.kind === "appt") {
+        const arr = store[key] || [], t = q.task, i = arr.indexOf(t); if (i < 0) return;
+        arr.splice(i, 1); t.done = true; arr.push(t);
+      } else { (N.done[key] ||= {})[q.id] = true; if (N.focus[key] === q.id) delete N.focus[key]; }
+      save(); renderNext();
+    };
+    $("nxAwake")?.addEventListener("click", () => {
+      N.awake[key] = P.now; if (P.wakeId) (N.done[key] ||= {})[P.wakeId] = true; save(); renderNext();
+    });
+    $("nxDone")?.addEventListener("click", () => doDone(head));
+    $("nxSkip")?.addEventListener("click", () => { (N.skip[key] ||= {})[head.id] = true; if (N.focus[key] === head.id) delete N.focus[key]; save(); renderNext(); });
+    $("nxQuick")?.addEventListener("click", e => { N.focus[key] = e.currentTarget.dataset.id; save(); renderNext(); });
+    body.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => {
+      const a = b.dataset.act;
+      if (a === "focus") { const q = P.queue[+b.dataset.i]; if (q && q.kind === "step" && +b.dataset.i > 0) { N.focus[key] = q.id; save(); renderNext(); } }
+      else if (a === "unskip") { delete (N.skip[key] || {})[b.dataset.id]; save(); renderNext(); }
+      else if (a === "undo") {
+        if (b.dataset.kind === "appt") {
+          const arr = store[key] || [], t = arr[+b.dataset.ai]; if (!t) return;
+          arr.splice(arr.indexOf(t), 1); const at = undoneCount(arr); t.done = false; arr.splice(at, 0, t);
+        } else delete (N.done[key] || {})[b.dataset.id];
+        save(); renderNext();
+      }
+    }));
+  }
+
+  function renderNextEdit(body, N) {
+    const steps = N.steps;
+    const rows = steps.map((s, i) => `<div class="nx-erow${s.on ? "" : " off"}" data-id="${s.id}">
+      <button type="button" class="tgl${s.on ? " on" : ""}" role="switch" aria-checked="${s.on}" aria-label="Include ${esc(s.text)}" data-f="on"></button>
+      <input class="nx-t" type="text" value="${esc(s.text)}" maxlength="40" aria-label="Step" data-f="text" enterkeyhint="done">
+      <input class="nx-mini nx-mins" type="number" min="1" max="600" value="${s.mins || 1}" aria-label="Minutes" data-f="mins" inputmode="numeric">
+      <input class="nx-mini" type="time" value="${s.t || ""}" aria-label="Start no earlier than" data-f="t">
+      <select class="nx-mini" aria-label="Place" data-f="place">${Object.entries(PLACES).map(([v, l]) => `<option value="${v}"${s.place === v ? " selected" : ""}>${l}</option>`).join("")}</select>
+      <button type="button" class="nx-btn" data-f="up" aria-label="Move up"${i === 0 ? " disabled" : ""}><svg viewBox="0 0 24 24"><path d="M6 14l6-6 6 6"/></svg></button>
+      <button type="button" class="nx-btn" data-f="down" aria-label="Move down"${i === steps.length - 1 ? " disabled" : ""}><svg viewBox="0 0 24 24"><path d="M6 10l6 6 6-6"/></svg></button>
+      <button type="button" class="nx-btn" data-f="del" aria-label="Remove ${esc(s.text)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>`).join("");
+    body.innerHTML = `<div class="h-card kc-card" style="grid-column:1/-1">
+      <div class="h-label"><span>Your routine</span><span>${steps.filter(s => s.on).length} on</span></div>
+      <div class="kc-list scrolls" id="nxEList">${rows || '<div class="kc-empty">No steps yet. Add the first one.</div>'}</div>
+      <div class="kc-add"><input id="nxAdd" type="text" placeholder="Add a step" aria-label="Add a step" maxlength="40" enterkeyhint="done"><button type="button" id="nxAddBtn">Add</button></div>
+      <p class="nx-hint">Minutes are a guess that helps Slate plan the clock. A time means "not before". Place keeps a step out of the queue until you switch to it.</p>
+      <div class="nx-foot"><button type="button" class="ed-here" id="nxReset">Restore starter routine</button></div>
+    </div>`;
+    const find = el => steps.find(s => s.id === el.closest(".nx-erow").dataset.id);
+    body.querySelectorAll(".nx-erow [data-f]").forEach(el => {
+      const f = el.dataset.f;
+      if (f === "text") el.addEventListener("change", () => { const s = find(el); const v = el.value.trim(); if (!v) { el.value = s.text; return; } s.text = v; save(); });
+      else if (f === "mins") el.addEventListener("change", () => { const s = find(el); s.mins = Math.max(1, Math.min(600, parseInt(el.value, 10) || 1)); el.value = s.mins; save(); });
+      else if (f === "t") el.addEventListener("change", () => { find(el).t = el.value || ""; save(); });
+      else if (f === "place") el.addEventListener("change", () => { find(el).place = el.value; save(); });
+      else el.addEventListener("click", () => {
+        const s = find(el), i = steps.indexOf(s);
+        if (f === "on") s.on = !s.on;
+        else if (f === "up" && i > 0) { steps.splice(i, 1); steps.splice(i - 1, 0, s); }
+        else if (f === "down" && i < steps.length - 1) { steps.splice(i, 1); steps.splice(i + 1, 0, s); }
+        else if (f === "del") steps.splice(i, 1);
+        save(); renderNext();
+      });
+    });
+    const add = () => {
+      const v = $("nxAdd").value.trim(); if (!v) return;
+      steps.push({ id: uid(), text: v, mins: 15, t: "", place: "any", on: true }); save(); renderNext(); $("nxAdd")?.focus();
+      const l = $("nxEList"); if (l) l.scrollTop = l.scrollHeight;
+    };
+    $("nxAddBtn").addEventListener("click", add);
+    $("nxAdd").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+    let armed = 0;
+    $("nxReset").addEventListener("click", e => {
+      const b = e.currentTarget;
+      if (!armed) { armed = setTimeout(() => { armed = 0; b.classList.remove("armed"); b.textContent = "Restore starter routine"; }, 3500); b.classList.add("armed"); b.textContent = "Tap again to restore"; return; }
+      clearTimeout(armed); N.steps = nextStarter(); save(); renderNext();
+    });
+  }
+  setInterval(() => { if (view === "next" && !nxEditing && !document.hidden && !document.activeElement?.closest?.("#nxBody")) renderNext(); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && view === "next" && !nxEditing) renderNext(); });
+
   // ---- family: homework updates from the kids ----
   function progressText(item, name) {
     const subj = item.subject ? item.subject.trim() : "";
