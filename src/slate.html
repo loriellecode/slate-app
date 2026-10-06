@@ -718,6 +718,10 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .ai-item[aria-pressed="true"] .kc-check { background: var(--green); box-shadow: none; }
 .ai-item[aria-pressed="true"] .kc-check svg { stroke-dashoffset: 0; }
 .ai-item:not([aria-pressed="true"]) .tx { color: var(--muted); text-decoration: line-through; }
+.ai-row { display: flex; align-items: center; gap: 8px; }
+.ai-row .ai-item { flex: 1; min-width: 0; width: auto; }
+.ai-mv { flex: 0 0 auto; font-size: 11px; letter-spacing: .04em; color: var(--muted); padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line); }
+.ai-mv:disabled { opacity: .4; }
 .ai-item .tx { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .ai-item .mt { color: var(--muted); font-size: 12px; text-align: right; flex: 0 0 auto; max-width: 42%; }
 .ai-rep { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); margin-top: 6px; }
@@ -3400,7 +3404,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     if (!date) {
       if ((m = eat(/\b(\d{4})-(\d{2})-(\d{2})\b/))) { date = m[0].trim(); exact = true; }
       else if ((m = eat(/\bday after tomorrow\b/i))) { date = keyOf(addDays(now, 2)); exact = true; }
-      else if ((m = eat(/\b(today|tonight|tomorrow|tmrw|tmr)\b/i))) { date = keyOf(addDays(now, /^tm/i.test(m[1]) ? 1 : 0)); exact = true; }
+      else if ((m = eat(/\b(today|tonight|tomorrow|tmrw|tmr)\b/i))) { date = keyOf(addDays(now, /^t(omorrow|mr)/i.test(m[1]) ? 1 : 0)); exact = true; }
       else if ((m = eat(/\bthis weekend\b/i))) { date = keyOf(addDays(now, (6 - now.getDay() + 7) % 7)); }
       else if ((m = eat(/\bnext week\b/i))) { date = keyOf(addDays(now, ((8 - now.getDay()) % 7) || 7)); }
       else if ((m = eat(new RegExp("\\b(?:(?:on|the)\\s+)?(" + MONLC.join("|") + ")[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?\\b", "i")))
@@ -3430,19 +3434,53 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     return { date, time, mins, exact, text: text.replace(/\s{2,}/g, " ").trim() };
   }
 
+  // The person's own words about where something goes: "Queue:", "Calendar:", "add to my queue", "for my routine"...
+  const AI_Q = "queue|que|routine|routines|daily routine|next list|next page";
+  const AI_C = "calendar|planner";
+  function aiCue(s) {
+    const q = s.search(new RegExp("\\b(?:" + AI_Q + ")\\b", "i")), c = s.search(new RegExp("\\b(?:" + AI_C + ")\\b", "i"));
+    if (q < 0 && c < 0) return "";
+    if (c < 0) return "q"; if (q < 0) return "c";
+    return q < c ? "q" : "c";
+  }
+  // Splits a line into {dest, text, heading}. heading = the line only names a destination (applies to the lines after it).
+  function aiRoute(line) {
+    const both = "(?:" + AI_Q + "|" + AI_C + ")";
+    const filler = /\b(?:please|pls|add|put|place|save|set|these|those|this|that|it|them|the|my|me|to|in|into|on|onto|for|under|as|are|is|go|goes|going|following|items?|tasks?|things?|plans?|list|stuff|everything|below|here|all|and|new|normal|regular|usual|main|slate|app|page|section|part|of|a|an|ones?)\b/gi;
+    const bare = line.replace(new RegExp("\\b" + both + "\\b", "gi"), " ").replace(filler, " ").replace(/[^a-z0-9]+/gi, "");
+    const cue = aiCue(line);
+    if (cue && !bare) return { dest: cue, text: "", heading: true };
+    if (!cue) return { dest: "", text: line, heading: false };
+    // heading with trailing content ("Queue: brush teeth, shower") or a trailing/leading instruction
+    let t = line;
+    t = t.replace(new RegExp("^\\W*(?:(?:add|put|place|save)\\s+(?:these|this|those|it|them)?\\s*)?(?:(?:to|in|into|on|onto|for|under)\\s+)?(?:(?:my|the|normal|regular)\\s+)*" + both + "\\s*(?:items?|tasks?|list)?\\s*[:\\-–—]\\s*", "i"), "");
+    t = t.replace(new RegExp("[\\s,;(\\[-]*(?:(?:add|put|place|save)\\s+(?:it|this|that|them)?\\s*)?(?:(?:to|in|into|on|onto|for|under)\\s+)(?:(?:my|the|normal|regular)\\s+)*" + both + "(?:\\s+(?:list|please))?[)\\]]?(?=\\s|$|[,.])", "i"), " ");
+    t = t.replace(/^\s*(?:please\s+)?(?:add|put|place|save)\s+(?=\S)/i, "");
+    t = t.replace(new RegExp("[(\\[]\\s*" + both + "\\s*[)\\]]", "ig"), " ");
+    t = t.replace(/\s{2,}/g, " ").trim();
+    return { dest: cue, text: t, heading: false, inline: true };
+  }
+
   function aiParseLocal(raw, target) {
     const out = { reply: "", calendar: [], queue: [], replaceQueue: false };
-    const lines = raw.split(/\r?\n|;/).map(l => l.replace(/^\s*(?:[-*•·]+|\d+[.)])\s*/, "").trim()).filter(l => l && !/^[\w\s]{1,30}:$/.test(l));
+    const lines = raw.split(/\r?\n|;/).map(l => l.replace(/^\s*(?:[-*•·]+|\d+[.)])\s*/, "").replace(/^#+\s*/, "").trim()).filter(Boolean);
     const now2 = new Date(), now = new Date(now2); now.setHours(0, 0, 0, 0);
-    let heading = null;
+    let section = "", told = 0;
     for (let line of lines) {
+      const rt = aiRoute(line);
+      if (rt.heading) { section = rt.dest; told++; continue; }
+      if (!rt.text) continue;
+      if (!rt.dest && /^[\w\s]{1,30}:$/.test(line)) continue;
+      const dest = rt.dest || section; if (rt.dest) told++;
+      line = rt.text;
       const wh = aiWhen(line, now2); let { date, time, mins, text } = wh;
       let place = "any";
       if (/\b(at work|office)\b/i.test(line)) place = "work"; else if (/\b(walk|errands?|gym|outside|store|groceries)\b/i.test(line)) place = "out";
       text = text.replace(/\b(at|on|by|around|for|from|@|the)\s*$/gi, " ").replace(/\s*[-–—:,]+\s*$/, "").replace(/^\s*[-–—:,@]+\s*/, "").replace(/\s{2,}/g, " ").trim();
       if (!text) continue;
       text = text.charAt(0).toUpperCase() + text.slice(1);
-      const toCal = target === "calendar" || (target === "both" && (date || time));
+      // their own words win; otherwise fall back to the selector
+      const toCal = dest ? dest === "c" : (target === "calendar" || (target === "both" && (date || time)));
       if (toCal) out.calendar.push({ text, date: date || keyOf(now), time });
       else out.queue.push({ text, mins: mins || 15, time, place, after: "" });
     }
@@ -3469,7 +3507,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       "Repeating things ('every Monday', 'daily for a week') become one calendar item per occurrence for up to 8 weeks (up to 14 days for daily). " +
       "Keep a date even when no time was given, and leave time empty then. Never invent a time. If a date or time is unclear, make your best guess and say what you assumed in the reply.\n" +
       `Their current queue routine, in order: ${steps || "(empty)"}.\n` +
-      `Where items may go: ${AI.target === "both" ? "your choice per item. CALENDAR is for things on a specific date or time (appointments, deadlines, events, one-off tasks). QUEUE is the ordered routine they walk through every day." : AI.target === "calendar" ? "CALENDAR only. Leave queue empty." : "QUEUE only. Leave calendar empty."}\n` +
+      `Default destination (only when they don't say): ${AI.target === "both" ? "your choice per item. CALENDAR is for things on a specific date or time (appointments, deadlines, events, one-off tasks). QUEUE is the ordered routine they walk through every day." : AI.target === "calendar" ? "CALENDAR." : "QUEUE."}\n` +
+      "THE PERSON'S OWN WORDS DECIDE where each item goes, and always beat the default above. Look for headings or labels such as 'Queue:', 'Calendar:', 'For my routine', 'normal calendar', and instructions such as 'add these to my queue' or 'put dentist on my calendar'. A heading applies to every item under it until the next heading. An instruction inside one line applies to that line only. A pasted message can mix both: put each item in the right list. 'Queue' and 'routine' mean QUEUE; 'calendar' means CALENDAR. A queue item keeps its time only if they gave a start time. A calendar item with no date goes on today. Never duplicate an item into both lists, and never drop an item because of the default.\n" +
       "Resolve relative dates (tomorrow, next Friday) to YYYY-MM-DD. Keep each text short and clear, under 60 characters, in the person's own words. Do not invent items they didn't ask for. Estimate mins for queue items when not given.\n" +
       'Reply with only JSON: {"reply":"one or two friendly sentences saying what you did or asking one short question if something is unclear","calendar":[{"text":"","when":"the exact words they used for the date and time, or empty","date":"YYYY-MM-DD","time":"HH:MM or empty"}],"queue":[{"text":"","mins":15,"time":"HH:MM or empty (only if they gave a start time)","place":"any|home|work|out","after":"name of an existing routine step to place it after, or empty"}],"replaceQueue":false}\n' +
       "Set replaceQueue true only if they ask to replace or rebuild their whole routine.";
@@ -3493,7 +3532,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     wait.remove();
     const r = out.res || {};
     const nowC = new Date(), todayK = keyOf(nowC);
-    const cal = (Array.isArray(r.calendar) ? r.calendar : []).filter(x => x && typeof x.text === "string" && x.text.trim() && AI.target !== "queue").slice(0, 60)
+    const told = raw.split(/\r?\n|;/).some(l => aiCue(l));
+    const cal = (Array.isArray(r.calendar) ? r.calendar : []).filter(x => x && typeof x.text === "string" && x.text.trim() && (AI.target !== "queue" || told)).slice(0, 60)
       .map(x => {
         let date = isoOk(x.date) ? x.date : "", time = hhmmOk(x.time) ? x.time : "";
         // double-check against the person's own words: spelled-out dates and clock times win over a miscount
@@ -3502,42 +3542,56 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
         if (!date) date = todayK;
         return { text: x.text.trim().slice(0, 80), date, time, on: true };
       });
-    const que = (Array.isArray(r.queue) ? r.queue : []).filter(x => x && typeof x.text === "string" && x.text.trim() && AI.target !== "calendar").slice(0, 60)
+    const que = (Array.isArray(r.queue) ? r.queue : []).filter(x => x && typeof x.text === "string" && x.text.trim() && (AI.target !== "calendar" || told)).slice(0, 60)
       .map(x => ({ text: x.text.trim().slice(0, 80), mins: Math.max(1, Math.min(600, Math.round(+x.mins) || 15)), time: hhmmOk(x.time) ? x.time : "", place: PLACES[x.place] ? x.place : "any", after: typeof x.after === "string" ? x.after.trim() : "", on: true }));
     AI.turns.push({ role: "user", content: raw.slice(0, 6000) }, { role: "assistant", content: JSON.stringify({ reply: r.reply || "", calendar: cal.map(({ on, ...c }) => c), queue: que.map(({ on, ...c }) => c) }) });
     if (out.err) aiAdd("assistant", "I couldn't reach the AI just now, so I sorted your list on this device instead.", "note");
     aiAdd("assistant", (typeof r.reply === "string" && r.reply.trim()) || (cal.length + que.length ? "Here's what I'd add." : "I couldn't find anything to add."));
-    if (cal.length || que.length) aiProposal(cal, que, !!r.replaceQueue && AI.target !== "calendar");
+    if (cal.length || que.length) aiProposal(cal, que, !!r.replaceQueue && (AI.target !== "calendar" || told));
     AI.busy = false; $("aiSend").disabled = false; ta.focus();
   }
 
   function aiProposal(cal, que, replace) {
     const box = document.createElement("div"); box.className = "ai-prop";
+    const todayK = keyOf(new Date());
     const rowHtml = (x, i, kind) => {
-      const meta = kind === "c" ? [x.date === keyOf(new Date()) ? "Today" : DAYS[dateOf(x.date).getDay()].slice(0, 3) + " " + shortDate(dateOf(x.date)), x.time ? fmtTime(x.time) : ""].filter(Boolean).join(" · ")
+      const meta = kind === "c" ? [x.date === todayK ? "Today" : DAYS[dateOf(x.date).getDay()].slice(0, 3) + " " + shortDate(dateOf(x.date)), x.time ? fmtTime(x.time) : ""].filter(Boolean).join(" · ")
         : [x.after ? "after " + x.after : "", x.time ? fmtTime(x.time) : "", nxLen(x.mins), x.place !== "any" ? PLACES[x.place] : ""].filter(Boolean).join(" · ");
-      return `<button type="button" class="ai-item" aria-pressed="true" data-k="${kind}" data-i="${i}"><span class="kc-check">${CHECK}</span><span class="tx">${esc(x.text)}</span><span class="mt">${esc(meta)}</span></button>`;
+      return `<div class="ai-row"><button type="button" class="ai-item" aria-pressed="${x.on}" data-k="${kind}" data-i="${i}"><span class="kc-check">${CHECK}</span><span class="tx">${esc(x.text)}</span><span class="mt">${esc(meta)}</span></button><button type="button" class="ai-mv" data-k="${kind}" data-i="${i}" aria-label="Move to ${kind === "c" ? "queue" : "calendar"}">${kind === "c" ? "→ Queue" : "→ Calendar"}</button></div>`;
     };
-    box.innerHTML = (cal.length ? `<h4>Calendar</h4>` + cal.map((x, i) => rowHtml(x, i, "c")).join("") : "") +
-      (que.length ? `<h4>Queue</h4>` + que.map((x, i) => rowHtml(x, i, "q")).join("") : "") +
-      (que.length ? `<label class="ai-rep"><button type="button" class="tgl${replace ? " on" : ""}" role="switch" aria-checked="${replace}" id="aiRepTgl"></button><span>Replace my whole routine with this queue</span></label>` : "") +
-      `<button type="button" class="ai-add">Add to Slate</button>`;
-    let rep = replace;
-    box.querySelectorAll(".ai-item").forEach(b => b.addEventListener("click", () => {
-      const x = (b.dataset.k === "c" ? cal : que)[+b.dataset.i]; x.on = !x.on; b.setAttribute("aria-pressed", String(x.on));
-      const n = cal.filter(y => y.on).length + que.filter(y => y.on).length; add.disabled = !n; add.textContent = n ? `Add ${n} to Slate` : "Nothing selected";
-    }));
-    const tg = box.querySelector("#aiRepTgl"); if (tg) tg.addEventListener("click", () => { rep = !rep; tg.classList.toggle("on", rep); tg.setAttribute("aria-checked", String(rep)); });
-    const add = box.querySelector(".ai-add"); add.textContent = `Add ${cal.length + que.length} to Slate`;
-    add.addEventListener("click", () => {
-      add.disabled = true;
-      const res = aiApply(cal.filter(x => x.on), que.filter(x => x.on), rep);
-      box.querySelectorAll(".ai-item").forEach(b => b.disabled = true);
-      add.textContent = "Added";
-      const bits = [];
-      if (res.cal) bits.push(`${res.cal} on your calendar`); if (res.que) bits.push(`${res.que} in your queue`);
-      aiAdd("assistant", (bits.length ? "Done. Added " + bits.join(" and ") + "." : "Those were already there, so nothing new was added.") + (res.skipped ? ` Skipped ${res.skipped} you already had.` : ""), "note");
-    });
+    let rep = replace, done = false;
+    const sync = () => {
+      const n = cal.filter(y => y.on).length + que.filter(y => y.on).length;
+      const add = box.querySelector(".ai-add"); if (!add) return;
+      add.disabled = !n; add.textContent = n ? `Add ${n} to Slate` : "Nothing selected";
+    };
+    const draw = () => {
+      box.innerHTML = (cal.length ? `<h4>Calendar</h4>` + cal.map((x, i) => rowHtml(x, i, "c")).join("") : "") +
+        (que.length ? `<h4>Queue</h4>` + que.map((x, i) => rowHtml(x, i, "q")).join("") : "") +
+        (que.length ? `<label class="ai-rep"><button type="button" class="tgl${rep ? " on" : ""}" role="switch" aria-checked="${rep}" id="aiRepTgl"></button><span>Replace my whole routine with this queue</span></label>` : "") +
+        `<button type="button" class="ai-add">Add to Slate</button>`;
+      box.querySelectorAll(".ai-item").forEach(b => b.addEventListener("click", () => {
+        const x = (b.dataset.k === "c" ? cal : que)[+b.dataset.i]; x.on = !x.on; b.setAttribute("aria-pressed", String(x.on)); sync();
+      }));
+      box.querySelectorAll(".ai-mv").forEach(b => b.addEventListener("click", () => {
+        const i = +b.dataset.i;
+        if (b.dataset.k === "c") { const [x] = cal.splice(i, 1); que.push({ text: x.text, mins: 15, time: x.time || "", place: "any", after: "", on: x.on }); }
+        else { const [x] = que.splice(i, 1); cal.push({ text: x.text, date: todayK, time: x.time || "", on: x.on }); }
+        draw();
+      }));
+      const tg = box.querySelector("#aiRepTgl"); if (tg) tg.addEventListener("click", () => { rep = !rep; tg.classList.toggle("on", rep); tg.setAttribute("aria-checked", String(rep)); });
+      box.querySelector(".ai-add").addEventListener("click", e => {
+        const add = e.currentTarget; add.disabled = true;
+        const res = aiApply(cal.filter(x => x.on), que.filter(x => x.on), rep && que.length > 0);
+        box.querySelectorAll(".ai-item,.ai-mv").forEach(b => b.disabled = true);
+        add.textContent = "Added";
+        const bits = [];
+        if (res.cal) bits.push(`${res.cal} on your calendar`); if (res.que) bits.push(`${res.que} in your queue`);
+        aiAdd("assistant", (bits.length ? "Done. Added " + bits.join(" and ") + "." : "Those were already there, so nothing new was added.") + (res.skipped ? ` Skipped ${res.skipped} you already had.` : ""), "note");
+      });
+      sync();
+    };
+    draw();
     $("aiThread").appendChild(box); aiScroll();
   }
 
