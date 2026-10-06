@@ -3361,31 +3361,85 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   // On-device fallback when no AI is reachable: reads times, dates and lengths out of each line
   const WD = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
   const MONLC = MONTHS.map(m => m.slice(0, 3).toLowerCase());
+  // Reads dates and times out of everyday phrases. exact = the date was spelled out (not "next friday"), so it can be trusted over a guess.
+  const NUMW = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12 };
+  function aiWhen(src, nowD) {
+    nowD = nowD || new Date();
+    const now = new Date(nowD); now.setHours(0, 0, 0, 0);
+    const hhmm = (h, mi) => pad2(h) + ":" + pad2(mi || 0);
+    let text = " " + src + " ", date = "", time = "", mins = 0, exact = false, m;
+    const eat = r => { const mm = text.match(r); if (mm) text = text.replace(mm[0], " "); return mm; };
+    const num = v => /^\d+$/.test(v) ? +v : (NUMW[String(v).toLowerCase()] || 0);
+    const evening = /\b(tonight|evening|dinner|supper|night)\b/i.test(src);
+    // relative: in 2 hours, in 45 minutes, in 3 days, in 2 weeks
+    if ((m = eat(/\bin\s+(\d+|an?|one|two|three|four|five|six|seven|eight|nine|ten|twelve)\s*(?:and a half\s*)?(minutes?|mins?|hours?|hrs?|days?|weeks?)\b/i))) {
+      const n = num(m[1]), u = m[2].toLowerCase();
+      if (/^(min|hour|hr)/.test(u)) { const t = new Date(nowD.getTime() + n * (/^m/.test(u) ? 60000 : 3600000)); date = keyOf(t); time = hhmm(t.getHours(), t.getMinutes()); exact = true; }
+      else { date = keyOf(addDays(now, n * (/^w/.test(u) ? 7 : 1))); exact = true; }
+    }
+    // clock times
+    if ((m = eat(/\b(?:from\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?\s*(?:-|–|—|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)(?![a-z])/i))) {
+      let h1 = +m[1] % 12, h2 = +m[4] % 12; const pm2 = /p/i.test(m[6]);
+      let pm1 = m[3] ? /p/i.test(m[3]) : pm2; if (!m[3] && (+m[1] % 12) > h2 + (pm2 ? 0 : 0) && +m[1] !== 12) pm1 = !pm2;
+      h1 += pm1 ? 12 : 0; h2 += pm2 ? 12 : 0;
+      if (!time) time = hhmm(h1, +m[2]);
+      mins = Math.max(0, (h2 * 60 + (+m[5] || 0)) - (h1 * 60 + (+m[2] || 0)));
+    } else if ((m = eat(/\b(noon|midday|midnight)\b/i))) { time = /midnight/i.test(m[1]) ? "00:00" : "12:00"; }
+    else if ((m = eat(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)(?![a-z])/i))) { let h = +m[1] % 12; if (/p/i.test(m[3])) h += 12; if (!time) time = hhmm(h, +m[2]); }
+    else if ((m = eat(/\b([01]?\d|2[0-3]):([0-5]\d)\b/))) { if (!time) time = hhmm(+m[1], +m[2]); }
+    else if ((m = eat(/\b(?:at|@|by|around|about)\s+(\d{1,2})(?::(\d{2}))?(?:\s*o'?clock)?(?!\s*(?:\d|min|hour|hr|day|week|%|st|nd|rd|th))\b/i)) || (m = eat(/\b(\d{1,2})\s*o'?clock\b/i))) {
+      let h = +m[1]; if (h > 12) { /* 24h */ } else if (h === 12) h = 12; else if (h <= 6) h += 12; else if (h <= 11) h += evening ? 12 : 0;
+      if (!time && h <= 23) time = hhmm(h, +m[2]);
+    }
+    // length
+    if ((m = eat(/\b(?:for\s+)?(\d+(?:\.\d+)?)\s*(?:hrs?|hours?)(?:\s*(?:and\s*)?(\d+)\s*(?:mins?|minutes?))?\b/i))) mins = Math.round(+m[1] * 60 + (+m[2] || 0));
+    else if ((m = eat(/\b(?:for\s+)?(\d+)\s*(?:mins?|minutes?)\b/i))) mins = +m[1];
+    else if ((m = eat(/\b(?:for\s+)?(an|a)\s+hour\b/i))) mins = 60;
+    else if (eat(/\bhalf an hour\b/i)) mins = 30;
+    // dates
+    if (!date) {
+      if ((m = eat(/\b(\d{4})-(\d{2})-(\d{2})\b/))) { date = m[0].trim(); exact = true; }
+      else if ((m = eat(/\bday after tomorrow\b/i))) { date = keyOf(addDays(now, 2)); exact = true; }
+      else if ((m = eat(/\b(today|tonight|tomorrow|tmrw|tmr)\b/i))) { date = keyOf(addDays(now, /^tm/i.test(m[1]) ? 1 : 0)); exact = true; }
+      else if ((m = eat(/\bthis weekend\b/i))) { date = keyOf(addDays(now, (6 - now.getDay() + 7) % 7)); }
+      else if ((m = eat(/\bnext week\b/i))) { date = keyOf(addDays(now, ((8 - now.getDay()) % 7) || 7)); }
+      else if ((m = eat(new RegExp("\\b(?:(?:on|the)\\s+)?(" + MONLC.join("|") + ")[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?\\b", "i")))
+            || (m = eat(new RegExp("\\b(?:on\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(" + MONLC.join("|") + ")[a-z]*\\b(?:,?\\s*(\\d{4}))?", "i")))) {
+        const mon = /^\d/.test(m[1]) ? m[2] : m[1], day = /^\d/.test(m[1]) ? m[1] : m[2];
+        let d = new Date(m[3] ? +m[3] : now.getFullYear(), MONLC.indexOf(mon.toLowerCase().slice(0, 3)), +day);
+        if (!m[3] && d < now) d.setFullYear(d.getFullYear() + 1);
+        if (!isNaN(d)) { date = keyOf(d); exact = true; }
+      } else if ((m = eat(/\b(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?\b/))) {
+        const y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : now.getFullYear(); let d = new Date(y, +m[1] - 1, +m[2]);
+        if (!m[3] && d < now) d.setFullYear(d.getFullYear() + 1);
+        if (!isNaN(d) && +m[1] >= 1 && +m[1] <= 12) { date = keyOf(d); exact = true; }
+      } else if ((m = eat(/\b(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b/i))) {
+        let d = new Date(now.getFullYear(), now.getMonth(), +m[1]); if (d < now) d = new Date(now.getFullYear(), now.getMonth() + 1, +m[1]);
+        if (!isNaN(d)) { date = keyOf(d); exact = true; }
+      } else if ((m = eat(/\b(next\s+|this\s+|on\s+)?(sun|mon|tue|tues|wed|weds|wednes|thu|thur|thurs|thurs|fri|sat|satur)(?:day)?s?\b/i))) {
+        const w = WD.findIndex(x => x.startsWith(m[2].toLowerCase().slice(0, 3)));
+        let add = (w - now.getDay() + 7) % 7;
+        if (/next/i.test(m[1] || "") && add === 0) add = 7;
+        date = keyOf(addDays(now, add)); exact = !/next/i.test(m[1] || "");
+      }
+    }
+    // parts of the day when no clock time was given
+    if ((m = eat(/\b(morning|afternoon|evening|tonight|night)\b/i)) && !time) time = /morning/i.test(m[1]) ? "09:00" : /afternoon/i.test(m[1]) ? "14:00" : "19:00";
+    if (/\b(tonight)\b/i.test(src) && !date) date = keyOf(now);
+    if (time && !date) { const [h, mi] = time.split(":").map(Number); date = keyOf(now); if (h * 60 + mi < nowD.getHours() * 60 + nowD.getMinutes() - 5 && !exact) date = date; }
+    return { date, time, mins, exact, text: text.replace(/\s{2,}/g, " ").trim() };
+  }
+
   function aiParseLocal(raw, target) {
     const out = { reply: "", calendar: [], queue: [], replaceQueue: false };
     const lines = raw.split(/\r?\n|;/).map(l => l.replace(/^\s*(?:[-*•·]+|\d+[.)])\s*/, "").trim()).filter(l => l && !/^[\w\s]{1,30}:$/.test(l));
-    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const now2 = new Date(), now = new Date(now2); now.setHours(0, 0, 0, 0);
     let heading = null;
     for (let line of lines) {
-      let date = "", time = "", mins = 0, text = line;
-      let m = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)(?![a-z])/i);
-      if (m) { let h = +m[1] % 12; if (/p/i.test(m[3])) h += 12; time = pad2(h) + ":" + (m[2] || "00"); text = text.replace(m[0], " "); }
-      else if ((m = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/))) { time = pad2(+m[1]) + ":" + m[2]; text = text.replace(m[0], " "); }
-      if ((m = text.match(/\b(\d+(?:\.\d+)?)\s*(?:hrs?|hours?)(?:\s*(?:and\s*)?(\d+)\s*(?:mins?|minutes?))?\b/i))) { mins = Math.round(+m[1] * 60 + (+m[2] || 0)); text = text.replace(m[0], " "); }
-      else if ((m = text.match(/\b(\d+)\s*(?:mins?|minutes?)\b/i))) { mins = +m[1]; text = text.replace(m[0], " "); }
-      if ((m = text.match(/\b(today|tonight|tomorrow)\b/i))) { date = keyOf(addDays(now, /tomorrow/i.test(m[1]) ? 1 : 0)); text = text.replace(m[0], " "); }
-      else if ((m = text.match(/\b(?:next\s+|this\s+)?(sun|mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?)(?:day)?\b/i))) {
-        const w = WD.findIndex(x => x.startsWith(m[1].toLowerCase().slice(0, 3))); let add = (w - now.getDay() + 7) % 7;
-        if (/next/i.test(m[0]) && add === 0) add = 7; date = keyOf(addDays(now, add)); text = text.replace(m[0], " ");
-      } else if ((m = text.match(new RegExp("\\b(" + MONLC.join("|") + ")[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b", "i")))) {
-        let d = new Date(now.getFullYear(), MONLC.indexOf(m[1].toLowerCase()), +m[2]); if (d < now) d.setFullYear(d.getFullYear() + 1); date = keyOf(d); text = text.replace(m[0], " ");
-      } else if ((m = text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/))) {
-        let y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : now.getFullYear(); let d = new Date(y, +m[1] - 1, +m[2]); if (!m[3] && d < now) d.setFullYear(d.getFullYear() + 1);
-        if (!isNaN(d)) { date = keyOf(d); text = text.replace(m[0], " "); }
-      }
+      const wh = aiWhen(line, now2); let { date, time, mins, text } = wh;
       let place = "any";
       if (/\b(at work|office)\b/i.test(line)) place = "work"; else if (/\b(walk|errands?|gym|outside|store|groceries)\b/i.test(line)) place = "out";
-      text = text.replace(/\b(at|on|by|around|for|from|@)\s*(?=$|[,.]|\s{2,})/gi, " ").replace(/\s*[-–—:,]+\s*$/, "").replace(/^\s*[-–—:,@]+\s*/, "").replace(/\s{2,}/g, " ").trim();
+      text = text.replace(/\b(at|on|by|around|for|from|@|the)\s*$/gi, " ").replace(/\s*[-–—:,]+\s*$/, "").replace(/^\s*[-–—:,@]+\s*/, "").replace(/\s{2,}/g, " ").trim();
       if (!text) continue;
       text = text.charAt(0).toUpperCase() + text.slice(1);
       const toCal = target === "calendar" || (target === "both" && (date || time));
@@ -3404,11 +3458,20 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const steps = nextData().steps.filter(x => x.on).map(x => x.text).join(", ");
     const sys =
       "You are the planner inside a minimal daily planner app called Slate. The person pastes or describes plans. Turn them into items for the app.\n" +
-      `Today is ${DAYS[nowD.getDay()]} ${keyOf(nowD)}. Current time ${pad2(nowD.getHours())}:${pad2(nowD.getMinutes())}.\n` +
+      `Today is ${DAYS[nowD.getDay()]} ${keyOf(nowD)}. Current local time ${pad2(nowD.getHours())}:${pad2(nowD.getMinutes())} (the person's own time zone).\n` +
+      "Calendar for the next three weeks, so you never miscount a weekday:\n" + Array.from({ length: 21 }, (_, i) => { const d = addDays(nowD, i); return `${i === 0 ? "today" : i === 1 ? "tomorrow" : "+" + i + "d"}: ${DAYS[d.getDay()]} ${keyOf(d)}`; }).join("; ") + ".\n" +
+      "Date and time rules: " +
+      "Dates are YYYY-MM-DD and times are 24-hour HH:MM. Use the calendar above for weekdays and relative days. " +
+      "A weekday name with no 'next' means its next upcoming occurrence, today included if it is that weekday. 'Next Friday' means the Friday of next week if today is before Friday this week, and say so in your reply when it could mean two dates. " +
+      "A month and day with no year means the next time it occurs. Dates like 3/4 are month/day (US). " +
+      "Times: 'noon' is 12:00, 'midnight' is 00:00, morning with no time is 09:00, afternoon 14:00, evening 18:00. A bare hour like 'at 3' is 15:00 unless it says morning; 'at 8' for dinner or tonight is 20:00. Honor ranges like '2-4pm' by using the start as time. " +
+      "'In 2 hours' means current time plus 2 hours. Never put an event in the past unless they clearly mean a past date. " +
+      "Repeating things ('every Monday', 'daily for a week') become one calendar item per occurrence for up to 8 weeks (up to 14 days for daily). " +
+      "Keep a date even when no time was given, and leave time empty then. Never invent a time. If a date or time is unclear, make your best guess and say what you assumed in the reply.\n" +
       `Their current queue routine, in order: ${steps || "(empty)"}.\n` +
       `Where items may go: ${AI.target === "both" ? "your choice per item. CALENDAR is for things on a specific date or time (appointments, deadlines, events, one-off tasks). QUEUE is the ordered routine they walk through every day." : AI.target === "calendar" ? "CALENDAR only. Leave queue empty." : "QUEUE only. Leave calendar empty."}\n` +
       "Resolve relative dates (tomorrow, next Friday) to YYYY-MM-DD. Keep each text short and clear, under 60 characters, in the person's own words. Do not invent items they didn't ask for. Estimate mins for queue items when not given.\n" +
-      'Reply with only JSON: {"reply":"one or two friendly sentences saying what you did or asking one short question if something is unclear","calendar":[{"text":"","date":"YYYY-MM-DD","time":"HH:MM or empty"}],"queue":[{"text":"","mins":15,"time":"HH:MM or empty","place":"any|home|work|out","after":"name of an existing routine step to place it after, or empty"}],"replaceQueue":false}\n' +
+      'Reply with only JSON: {"reply":"one or two friendly sentences saying what you did or asking one short question if something is unclear","calendar":[{"text":"","when":"the exact words they used for the date and time, or empty","date":"YYYY-MM-DD","time":"HH:MM or empty"}],"queue":[{"text":"","mins":15,"time":"HH:MM or empty (only if they gave a start time)","place":"any|home|work|out","after":"name of an existing routine step to place it after, or empty"}],"replaceQueue":false}\n' +
       "Set replaceQueue true only if they ask to replace or rebuild their whole routine.";
     const turns = AI.turns.slice(-6).concat([{ role: "user", content: userText.slice(0, 6000) }]);
     turns[0] = { role: turns[0].role, content: sys + "\n\n---\n\n" + turns[0].content };
@@ -3429,8 +3492,16 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     catch (e) { out = { res: aiParseLocal(raw, AI.target), ai: false, err: true }; }
     wait.remove();
     const r = out.res || {};
+    const nowC = new Date(), todayK = keyOf(nowC);
     const cal = (Array.isArray(r.calendar) ? r.calendar : []).filter(x => x && typeof x.text === "string" && x.text.trim() && AI.target !== "queue").slice(0, 60)
-      .map(x => ({ text: x.text.trim().slice(0, 80), date: isoOk(x.date) ? x.date : keyOf(new Date()), time: hhmmOk(x.time) ? x.time : "", on: true }));
+      .map(x => {
+        let date = isoOk(x.date) ? x.date : "", time = hhmmOk(x.time) ? x.time : "";
+        // double-check against the person's own words: spelled-out dates and clock times win over a miscount
+        const w = typeof x.when === "string" && x.when.trim() ? aiWhen(x.when, nowC) : null;
+        if (w) { if (w.date && w.exact && w.date !== date) date = w.date; if (w.time && (!time || w.time !== time) && /\d|noon|midnight/.test(x.when)) time = w.time; }
+        if (!date) date = todayK;
+        return { text: x.text.trim().slice(0, 80), date, time, on: true };
+      });
     const que = (Array.isArray(r.queue) ? r.queue : []).filter(x => x && typeof x.text === "string" && x.text.trim() && AI.target !== "calendar").slice(0, 60)
       .map(x => ({ text: x.text.trim().slice(0, 80), mins: Math.max(1, Math.min(600, Math.round(+x.mins) || 15)), time: hhmmOk(x.time) ? x.time : "", place: PLACES[x.place] ? x.place : "any", after: typeof x.after === "string" ? x.after.trim() : "", on: true }));
     AI.turns.push({ role: "user", content: raw.slice(0, 6000) }, { role: "assistant", content: JSON.stringify({ reply: r.reply || "", calendar: cal.map(({ on, ...c }) => c), queue: que.map(({ on, ...c }) => c) }) });
@@ -3443,7 +3514,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   function aiProposal(cal, que, replace) {
     const box = document.createElement("div"); box.className = "ai-prop";
     const rowHtml = (x, i, kind) => {
-      const meta = kind === "c" ? [x.date !== keyOf(new Date()) ? shortDate(dateOf(x.date)) : "Today", x.time ? fmtTime(x.time) : ""].filter(Boolean).join(" · ")
+      const meta = kind === "c" ? [x.date === keyOf(new Date()) ? "Today" : DAYS[dateOf(x.date).getDay()].slice(0, 3) + " " + shortDate(dateOf(x.date)), x.time ? fmtTime(x.time) : ""].filter(Boolean).join(" · ")
         : [x.after ? "after " + x.after : "", x.time ? fmtTime(x.time) : "", nxLen(x.mins), x.place !== "any" ? PLACES[x.place] : ""].filter(Boolean).join(" · ");
       return `<button type="button" class="ai-item" aria-pressed="true" data-k="${kind}" data-i="${i}"><span class="kc-check">${CHECK}</span><span class="tx">${esc(x.text)}</span><span class="mt">${esc(meta)}</span></button>`;
     };
