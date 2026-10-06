@@ -551,6 +551,9 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .nx-queue .kc-list { touch-action: pan-y; }
 .nx-sec { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: 10px 4px 0; }
 .nx-item[role="button"] { cursor: pointer; }
+.nx-q.cur { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.nx-q .kc-check { cursor: pointer; }
+.nx-q.done { box-shadow: none; }
 .nx-item.dim { opacity: .5; }
 .nx-item .kc-time { margin-left: auto; font-variant-numeric: tabular-nums; }
 .nx-item .kc-mine { margin-left: 6px; }
@@ -3112,12 +3115,12 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
         <div class="nx-meta"><span>${left ? `${left} step${left > 1 ? "s" : ""} wait for another place. Switch place above.` : (P.total ? "Rest well. Tomorrow starts fresh." : "Tap Edit routine to build your day.")}</span></div>
       </div>`;
     }
-    const row = (q, i) => `<button type="button" class="kc-item nx-item" data-act="focus" data-i="${i}"${i === 0 ? ' aria-current="true"' : ""}><span class="kc-text">${esc(q.text)}</span>${q.kind === "appt" ? '<span class="kc-mine">Appt</span>' : ""}<span class="kc-time">${nxClock(q.est)}</span></button>`;
-    let list = P.queue.length > 1 ? P.queue.slice(1).map((q, i) => row(q, i + 1)).join("") : '<div class="kc-empty">Nothing else waiting.</div>';
+    const row = (q, i) => `<div class="kc-item nx-item nx-q${i === 0 ? " cur" : ""}" role="button" tabindex="0" data-act="focus" data-i="${i}"${i === 0 ? ' aria-current="true"' : ""}><button type="button" class="kc-check" data-act="check" data-i="${i}" aria-label="Mark ${esc(q.text)} done">${CHECK}</button><span class="kc-text">${esc(q.text)}</span>${q.kind === "appt" ? '<span class="kc-mine">Appt</span>' : ""}<span class="kc-time">${nxClock(q.est)}</span></div>`;
+    let list = P.queue.length ? P.queue.map(row).join("") : '<div class="kc-empty">Nothing waiting.</div>';
     if (P.elsewhere.length) list += `<div class="nx-sec">Other places</div>` + P.elsewhere.map(s => `<div class="kc-item nx-item dim"><span class="kc-text">${esc(s.text)}</span><span class="kc-mine">${PLACES[s.place]}</span></div>`).join("");
     if (P.skippedItems.length) list += `<div class="nx-sec">Skipped</div>` + P.skippedItems.map(s => `<button type="button" class="kc-item nx-item dim" data-act="unskip" data-id="${s.id}"><span class="kc-text">${esc(s.text)}</span><span class="kc-time">Bring back</span></button>`).join("");
     if (P.doneItems.length) list += `<div class="nx-sec">Done</div>` + P.doneItems.map(d => `<button type="button" class="kc-item nx-item done dim" data-act="undo" data-kind="${d.kind}" data-id="${d.id || ""}" data-ai="${d.ai ?? ""}"><span class="kc-check">${CHECK}</span><span class="kc-text">${esc(d.text)}</span><span class="kc-time">Undo</span></button>`).join("");
-    body.innerHTML = now + `<div class="h-card kc-card nx-queue"><div class="h-label"><span>Up next</span><span>${Math.max(0, P.queue.length - 1)}</span></div><div class="kc-list scrolls">${list}</div><p class="nx-hint">Slate orders the day by your routine, the clock, your calendar and what you've finished. Tap a step to do it first.</p></div>`;
+    body.innerHTML = now + `<div class="h-card kc-card nx-queue"><div class="h-label"><span>Queue</span><span>${P.queue.length}</span></div><div class="kc-list scrolls">${list}</div><p class="nx-hint">Slate orders the day by your routine, the clock, your calendar and what you've finished. Tap a step to do it first.</p></div>`;
     const key = P.key;
     const doDone = (q) => {
       if (q.kind === "appt") {
@@ -3129,11 +3132,25 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     $("nxAwake")?.addEventListener("click", () => {
       N.awake[key] = P.now; if (P.wakeId) (N.done[key] ||= {})[P.wakeId] = true; save(); renderNext();
     });
-    $("nxDone")?.addEventListener("click", () => doDone(head));
+    // green check, strike through, then slide to the bottom before it's filed under Done
+    let nxBusy = false;
+    const finish = (q, i) => {
+      if (nxBusy) return; nxBusy = true;
+      const rowEl = body.querySelector(`.nx-q[data-i="${i}"]`), box = rowEl && rowEl.parentElement;
+      if (!rowEl) { doDone(q); return; }
+      rowEl.classList.add("done");
+      setTimeout(() => {
+        const last = box.lastElementChild, dy = last.getBoundingClientRect().bottom - rowEl.getBoundingClientRect().bottom;
+        rowEl.style.transition = "transform .55s var(--ease), opacity .55s ease"; rowEl.style.transform = `translateY(${Math.max(0, dy)}px)`; rowEl.style.opacity = ".5";
+        setTimeout(() => doDone(q), 560);
+      }, 650);
+    };
+    $("nxDone")?.addEventListener("click", () => finish(head, 0));
     $("nxSkip")?.addEventListener("click", () => { (N.skip[key] ||= {})[head.id] = true; if (N.focus[key] === head.id) delete N.focus[key]; save(); renderNext(); });
     $("nxQuick")?.addEventListener("click", e => { N.focus[key] = e.currentTarget.dataset.id; save(); renderNext(); });
-    body.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => {
+    body.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", e => {
       const a = b.dataset.act;
+      if (a === "check") { e.stopPropagation(); finish(P.queue[+b.dataset.i], +b.dataset.i); return; }
       if (a === "focus") { const q = P.queue[+b.dataset.i]; if (q && q.kind === "step" && +b.dataset.i > 0) { N.focus[key] = q.id; save(); renderNext(); } }
       else if (a === "unskip") { delete (N.skip[key] || {})[b.dataset.id]; save(); renderNext(); }
       else if (a === "undo") {
