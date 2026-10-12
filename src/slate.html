@@ -1013,6 +1013,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <h2>Settings</h2>
     <button class="opt" id="acctOpt"><span>Account</span><span id="acctVal" style="color:var(--muted)">Sign in</span></button>
     <button class="opt" id="themeOpt"><span>Appearance</span><span id="themeVal" style="color:var(--muted)">System</span></button>
+    <button class="opt" id="iconOpt"><span>App icon</span><span id="iconVal" style="color:var(--muted)">Blue</span></button>
     <button class="opt" id="styleOpt"><span>Style</span><span id="styleVal" style="color:var(--muted)">Classic</span></button>
     <button class="opt" id="clearOpt"><span id="clearLbl">Clear this day</span><span id="clearVal" style="color:var(--muted)">›</span></button>
     <button class="opt" id="clearCalOpt"><span>Clear calendar</span><span id="clearCalVal" style="color:var(--muted)">›</span></button>
@@ -4757,49 +4758,23 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") fit(); });
   })();
 
-  // ---- Date icon: an Apple-Calendar-style tile that follows today's date. Drawn on this device, so it works offline. ----
-  // Weekday is the 3-letter capital form Apple uses (WED); other languages use the system's short weekday, capitalised.
-  const dateIcon = (() => {
-    const BLUE = "#007AFF", EN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-    const FONT = '-apple-system, "SF Pro Display", system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
-    const dayWord = d => {
-      const lang = String(navigator.language || "en").toLowerCase();
-      if (lang.indexOf("en") === 0) return EN[d.getDay()];
-      try { return new Intl.DateTimeFormat(navigator.language, { weekday: "short" }).format(d).toUpperCase(); } catch (e) { return EN[d.getDay()]; }
-    };
-    // round = rounded corners with clear outside (browser tab only). Home-screen icons stay square and fully white: iOS rounds them itself and paints any clear pixels black.
-    function draw(size, d, round) {
-      const c = document.createElement("canvas"); c.width = c.height = size;
-      const x = c.getContext("2d"); x.fillStyle = "#fff";
-      if (round) { const r = size * .2237; x.beginPath(); x.moveTo(r, 0); x.arcTo(size, 0, size, size, r); x.arcTo(size, size, 0, size, r); x.arcTo(0, size, 0, 0, r); x.arcTo(0, 0, size, 0, r); x.closePath(); x.fill(); }
-      else x.fillRect(0, 0, size, size);
-      x.fillStyle = BLUE; x.textAlign = "center"; x.textBaseline = "alphabetic";
-      const fit = (txt, px, wt, maxW, y, ls) => {
-        x.font = `${wt} ${px}px ${FONT}`; if ("letterSpacing" in x) x.letterSpacing = (ls || 0) + "px";
-        const w = x.measureText(txt).width; if (w > maxW) x.font = `${wt} ${px * maxW / w}px ${FONT}`;
-        x.fillText(txt, size / 2, y);
-      };
-      fit(dayWord(d), size * .165, 600, size * .7, size * .285, size * .012);
-      fit(String(d.getDate()), size * .6, 300, size * .74, size * .805, 0);
-      return c;
-    }
-    let last = "";
-    function apply(force) {
-      const now = new Date(), k = keyOf(now);
-      if (k === last && !force) return; last = k;
-      try {
-        const head = document.head;
-        head.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"],link[rel="shortcut icon"]').forEach(l => l.remove());
-        const add = (rel, url, sizes) => { const l = document.createElement("link"); l.rel = rel; l.type = "image/png"; if (sizes) l.setAttribute("sizes", sizes); l.href = url; head.appendChild(l); };
-        add("icon", draw(64, now, true).toDataURL("image/png"), "64x64");
-        add("apple-touch-icon", draw(180, now, false).toDataURL("image/png"), "180x180");
-      } catch (e) {}
-    }
-    apply(true);
-    setInterval(() => apply(false), 30000);
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") apply(false); });
-    return { draw, dayWord, apply };
-  })();
+  // ---- App icon: Blue (default), White or Black. iOS reads the icon when Slate is added to the Home Screen, so a change applies to the next add. ----
+  const ICON_NAMES = { blue: "Blue", white: "White", black: "Black" }, ICON_ORDER = ["blue", "white", "black"];
+  let iconKey = "blue"; try { const v = localStorage.getItem("slate.icon"); if (ICON_NAMES[v]) iconKey = v; } catch (e) {}
+  function applyIcon() {
+    $("iconVal").textContent = ICON_NAMES[iconKey];
+    if (!CAN_SYNC) return;
+    document.head.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(l => l.remove());
+    const add = (rel, href, sizes) => { const l = document.createElement("link"); l.rel = rel; l.type = "image/png"; if (sizes) l.setAttribute("sizes", sizes); l.href = href; document.head.appendChild(l); };
+    add("icon", "favicon-" + iconKey + ".png", "64x64"); add("apple-touch-icon", "apple-touch-icon-" + iconKey + ".png", "180x180");
+  }
+  $("iconOpt").addEventListener("click", () => {
+    iconKey = ICON_ORDER[(ICON_ORDER.indexOf(iconKey) + 1) % ICON_ORDER.length];
+    try { localStorage.setItem("slate.icon", iconKey); } catch (e) {}
+    applyIcon();
+    if (CAN_SYNC) notify("Icon set to " + ICON_NAMES[iconKey] + ". It shows when you add Slate to your Home Screen.", {});
+  });
+  if (!CAN_SYNC) $("iconOpt").hidden = true; else applyIcon();
 
   setAcctMode("in");
   updateAcctUI();

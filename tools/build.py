@@ -24,7 +24,7 @@ head = f"""<!doctype html>
 <meta name="theme-color" content="#f2f2f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
-<!-- Date-tile icons: the page redraws these links with today's date on every open (see dateIcon in slate.html); these are the fallbacks. -->
+<!-- The page points these at the icon chosen in Settings (Blue, White or Black); these are the defaults. -->
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <style>body{{margin:0}}[hidden]{{display:none!important}}img{{max-width:100%}}</style>
