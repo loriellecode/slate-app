@@ -315,9 +315,11 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .slot-time input { font: inherit; font-size: 17px; color: var(--ink); background: var(--bg); border: 0; border-radius: 999px; padding: 8px 14px; min-height: 40px; }
 .slot-list { overflow-y: auto; scrollbar-width: none; min-height: 0; flex: 1 1 auto; max-height: 40vh; }
 .slot-list::-webkit-scrollbar { display: none; }
-.slot-list .opt { min-height: 52px; font-size: 18px; overflow-wrap: anywhere; }
-.slot-list .opt::after { content: "+"; color: var(--soft); font-size: 22px; line-height: 1; margin-left: 12px; flex: 0 0 auto; }
-.slot-list .opt.fresh { animation: slotFresh 1.1s ease; }
+.slot-row { display: flex; align-items: center; border-top: 1.5px solid var(--line); }
+.slot-row.fresh { animation: slotFresh 1.1s ease; }
+.slot-list .opt { min-height: 52px; font-size: 18px; overflow-wrap: anywhere; border-top: 0; flex: 1; min-width: 0; }
+.slot-x { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; color: var(--muted); border-radius: 50%; }
+.slot-x svg { width: 16px; height: 16px; }
 @keyframes slotFresh { from { background: color-mix(in srgb, var(--green) 25%, transparent); } to { background: transparent; } }
 .slot-empty { color: var(--muted); padding-block: 16px; border-top: 1.5px solid var(--line); }
 .slot-add { display: flex; gap: 8px; padding-top: 14px; border-top: 1.5px solid var(--line); flex: 0 0 auto; }
@@ -1551,24 +1553,36 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   }
 
   // ---------- double-tap an empty slot: pick one of your routines ----------
-  let slotDay = null;
+  let slotDay = null, slotArm = 0; // taps are ignored right after it opens, so a finger still resting on the screen can't pick anything
+  const slotArmed = () => Date.now() < slotArm;
   function buildSlotList(freshText) {
     const box = $("slotList"); box.replaceChildren();
     if (!routines.length) { const e = document.createElement("div"); e.className = "slot-empty"; e.textContent = "No routines yet. Add one below."; box.appendChild(e); return; }
     routines.forEach((r, i) => {
-      const b = document.createElement("button"); b.type = "button"; b.className = "opt" + (freshText && r === freshText ? " fresh" : ""); b.dataset.i = i; b.textContent = r; box.appendChild(b);
+      const row = document.createElement("div"); row.className = "slot-row" + (freshText && r === freshText ? " fresh" : "");
+      const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.dataset.i = i; b.textContent = r;
+      const x = document.createElement("button"); x.type = "button"; x.className = "slot-x"; x.dataset.i = i; x.setAttribute("aria-label", "Delete routine " + r); x.innerHTML = X_ICON;
+      row.append(b, x); box.appendChild(row);
     });
-    if (freshText) { const f = box.querySelector(".fresh"); if (f) requestAnimationFrame(() => f.scrollIntoView({ block: "nearest" })); }
+    if (freshText) { const f = box.querySelector(".slot-row.fresh"); if (f) requestAnimationFrame(() => f.scrollIntoView({ block: "nearest" })); }
   }
   function openSlotSheet(d) {
     if ($("slotSheet").classList.contains("open")) return;
-    slotDay = d; $("slotTime").value = ""; $("slotNew").value = "";
+    slotDay = d; $("slotTime").value = ""; $("slotNew").value = ""; slotArm = Date.now() + 900;
     buildSlotList(); $("slotSheet").classList.add("open");
   }
   const closeSlotSheet = () => { $("slotSheet").classList.remove("open"); $("slotNew").blur(); };
-  $("slotClose").addEventListener("click", closeSlotSheet);
-  $("slotSheet").addEventListener("click", e => { if (e.target === $("slotSheet")) closeSlotSheet(); });
+  $("slotClose").addEventListener("click", () => { if (!slotArmed()) closeSlotSheet(); });
+  $("slotSheet").addEventListener("click", e => { if (e.target === $("slotSheet") && !slotArmed()) closeSlotSheet(); });
+  // lifting the finger after a press-and-hold re-arms the wait, so nothing is chosen by the release itself
+  $("slotSheet").addEventListener("touchend", () => { if (Date.now() < slotArm + 400) slotArm = Math.max(slotArm, Date.now() + 500); }, { passive: true });
   $("slotList").addEventListener("click", e => {
+    if (slotArmed()) return;
+    const xb = e.target.closest(".slot-x");
+    if (xb) {
+      const i = +xb.dataset.i; if (i >= 0 && i < routines.length) { routines.splice(i, 1); save(); buildSlotList(); buildRoutines(); }
+      return;
+    }
     const b = e.target.closest(".opt"); if (!b || !slotDay) return;
     const text = routines[+b.dataset.i]; if (!text) return;
     const arr = tasksFor(slotDay), task = { t: $("slotTime").value || "", text, done: false };
