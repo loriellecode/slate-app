@@ -32,7 +32,22 @@ head = f"""<!doctype html>
 </head>
 <body>
 """
-sw_register = '<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>'
+sw_register = """<script>
+if ("serviceWorker" in navigator) {
+  // Pick up new versions without reinstalling: check for an update on open and whenever the app comes back, and reload once when a new version takes over.
+  const hadController = !!navigator.serviceWorker.controller; let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloaded) return; reloaded = true;
+    const go = () => { const busy = document.querySelector(".sheet-wrap.open, .ideas-page.open, .side-panel.open") || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)); if (busy) return setTimeout(go, 4000); location.reload(); };
+    go();
+  });
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").then(reg => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check(); });
+    setInterval(check, 5 * 60 * 1000);
+  }).catch(() => {}));
+}
+</script>"""
 
 if DIST.exists():
     shutil.rmtree(DIST)
