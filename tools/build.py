@@ -29,6 +29,8 @@ head = f"""<!doctype html>
 <link rel="icon" type="image/png" href="favicon.png">
 <script>
   window.SLATE_BUILD = "__BUILD__";
+  // placement set in Settings > Adjust dock and loading screen, applied before the loading screen draws
+  try {{ var tn = JSON.parse(localStorage.getItem("slate.tune") || "{{}}"); [["dockY","--dock-y"],["dockPad","--dock-pad"],["ldExt","--ld-ext"]].forEach(function (p) {{ if (isFinite(tn[p[0]])) document.documentElement.style.setProperty(p[1], tn[p[0]] + "px"); }}); }} catch (e) {{}}
   // iOS 26 home-screen apps: size the page to the whole screen before anything draws (see html.fullh in the styles).
   (function () {{ try {{
     var sa = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);

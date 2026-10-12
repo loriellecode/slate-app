@@ -57,7 +57,7 @@ html, body { height: 100%; }
    Fixed layers can't draw into that strip, so in that case the page is made the full screen height and the full-screen layers are placed on it instead. */
 html.fullh, html.fullh body { height: var(--full-h, 100%); }
 html.fullh body { position: relative; }
-html.fullh :is(#bgLayer, #splash, .sheet-wrap, .ideas-page, .side-panel, .dock, .hint, .month-foot) { position: absolute; }
+html.fullh :is(#bgLayer, #splash, #ldPrev, .sheet-wrap, .ideas-page, .side-panel, .dock, .hint, .month-foot) { position: absolute; }
 html { box-sizing: border-box; overflow: hidden; overscroll-behavior: none; }
 /* Day and month names are stored in Title Case; Classic shows them in capitals */
 .splash-date, .splash-day, .splash-word, .label, .weekday, .wk-day, .today-line, .m-head span { text-transform: uppercase; }
@@ -108,7 +108,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 input { -webkit-user-select: text; user-select: text; }
 
 /* ---------- Splash ---------- */
-#splash { --ld-bg: #ffffff; --ld-ink: #0a0a0a; --ld-mute: #b3b3b3; position: fixed; inset: 0; bottom: calc(-1 * var(--dock-gap, 0px)); z-index: 40; background: var(--ld-bg); color: var(--ld-ink); display: grid; place-items: center; transition: opacity .7s ease; }
+#splash { --ld-bg: #ffffff; --ld-ink: #0a0a0a; --ld-mute: #b3b3b3; position: fixed; inset: 0; bottom: calc(-1 * var(--dock-gap, 0px) - var(--ld-ext, 0px)); z-index: 40; background: var(--ld-bg); color: var(--ld-ink); display: grid; place-items: center; transition: opacity .7s ease; }
 #splash.out { opacity: 0; pointer-events: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #splash { --ld-bg: #000000; --ld-ink: #f5f5f5; --ld-mute: #6e6e6e; } }
 :root[data-theme="dark"] #splash { --ld-bg: #000000; --ld-ink: #f5f5f5; --ld-mute: #6e6e6e; }
@@ -316,6 +316,17 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .dd-empty { color: var(--muted); padding-block: 18px; border-top: 1.5px solid var(--line); }
 .sheet .opt { display: flex; justify-content: space-between; align-items: center; padding-block: 14px; border-top: 1.5px solid var(--line); font-size: 18px; width: 100%; text-align: left; }
 .sheet .close { margin-top: 18px; width: 100%; padding: 14px; border-radius: 999px; background: var(--bg); font-size: 16px; flex: 0 0 auto; }
+.tune { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 10px); transform: translateX(-50%); z-index: 45; width: min(420px, calc(100% - 24px)); box-sizing: border-box; background: var(--card); color: var(--ink); border-radius: 26px; padding: 18px 20px 16px; box-shadow: 0 14px 40px var(--shadow); }
+.tune h3 { margin: 0 0 6px; font-weight: 400; font-size: 20px; }
+.tune p { margin: 0 0 10px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.tune label { display: block; padding-block: 8px; border-top: 1.5px solid var(--line); font-size: 15px; }
+.tune label span { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.tune label output { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tune input[type=range] { width: 100%; accent-color: var(--ink); touch-action: pan-x; }
+.tune .tune-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+.tune .tune-btns button { padding: 11px 6px; border-radius: 999px; background: var(--bg); font-size: 14px; }
+.tune .tune-btns .ink { background: var(--ink); color: var(--on-ink); }
+#ldPrev { position: fixed; inset: 0; bottom: calc(-1 * var(--dock-gap, 0px) - var(--ld-ext, 0px)); z-index: 44; background: #fff; color: #b3b3b3; display: grid; place-items: center; font-size: 15px; letter-spacing: .12em; }
 .slot-time { display: flex; justify-content: space-between; align-items: center; padding-block: 12px; border-top: 1.5px solid var(--line); font-size: 17px; color: var(--muted); }
 .slot-time input { font: inherit; font-size: 17px; color: var(--ink); background: var(--bg); border: 0; border-radius: 999px; padding: 8px 14px; min-height: 40px; }
 .slot-rep { padding-block: 12px; border-top: 1.5px solid var(--line); display: flex; }
@@ -840,7 +851,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   html { background: var(--card); }
   html:has(#splash) { background: #fff; }
   html[data-bg] { background: #2a6aa8; }
-  .dock { display: flex; position: fixed; left: 0; right: 0; z-index: 15; justify-content: space-around; align-items: flex-end; bottom: calc(-1 * var(--dock-gap, 0px)); padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) * .5 + var(--dock-gap, 0px) + 4px); background: var(--card); border-radius: 30px 30px 0 0; box-shadow: 0 -6px 26px var(--shadow); }
+  .dock { display: flex; position: fixed; left: 0; right: 0; z-index: 15; justify-content: space-around; align-items: flex-end; bottom: calc(-1 * var(--dock-gap, 0px)); padding: 8px 12px max(0px, calc(env(safe-area-inset-bottom, 0px) * .5 + var(--dock-gap, 0px) + 4px + var(--dock-pad, 0px))); background: var(--card); border-radius: 30px 30px 0 0; box-shadow: 0 -6px 26px var(--shadow); }
+  .dock { transform: translateY(var(--dock-y, 0px)); }
   .dock::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 120px; background: var(--card); }
   .dock button { position: relative; width: 66px; height: 54px; display: grid; place-items: center; color: var(--muted); -webkit-tap-highlight-color: transparent; }
   .dock svg { width: 24px; height: 24px; overflow: visible; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .4s var(--ease), stroke .3s ease; }
@@ -1021,6 +1033,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <button class="opt" id="iconOpt"><span>App icon</span><span id="iconVal" style="color:var(--muted)">Blue</span></button>
     <button class="opt" id="styleOpt"><span>Style</span><span id="styleVal" style="color:var(--muted)">Classic</span></button>
     <button class="opt" id="clearOpt"><span id="clearLbl">Clear this day</span><span id="clearVal" style="color:var(--muted)">›</span></button>
+    <button class="opt" id="tuneOpt"><span>Adjust dock and loading screen</span><span style="color:var(--muted)">›</span></button>
     <button class="opt" id="clearCalOpt"><span>Clear calendar</span><span id="clearCalVal" style="color:var(--muted)">›</span></button>
     <button class="opt" id="accentsOpt"><span>Accents</span><span style="color:var(--muted)">›</span></button>
     <button class="opt" id="backupOpt"><span>Back up or restore data</span><span style="color:var(--muted)">›</span></button>
@@ -1211,6 +1224,15 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 </div>
 <div class="month-foot" id="monthFoot" aria-hidden="true"></div>
 <input type="file" id="avatarInput" accept="image/*" hidden>
+<div class="tune" id="tunePanel" hidden role="dialog" aria-label="Adjust dock and loading screen">
+  <h3>Placement</h3>
+  <p>Slide until the dock and loading screen sit right on your phone. Saved on this device.</p>
+  <label><span>Dock up or down <output id="tvDockY"></output></span><input type="range" id="tDockY" min="-60" max="80" step="1"></label>
+  <label><span>Space under dock icons <output id="tvDockPad"></output></span><input type="range" id="tDockPad" min="-30" max="60" step="1"></label>
+  <label><span>Loading screen reaches down <output id="tvLdExt"></output></span><input type="range" id="tLdExt" min="0" max="120" step="1"></label>
+  <div class="tune-btns"><button type="button" id="tunePrev">Show loading</button><button type="button" id="tuneReset">Reset</button><button type="button" class="ink" id="tuneDone">Done</button></div>
+</div>
+<div id="ldPrev" hidden>loading...</div>
 <div class="sheet-wrap" id="slotSheet">
   <div class="sheet">
     <h2>Add a routine</h2>
@@ -2499,7 +2521,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       startY = null;
       return;
     }
-    if (e.target.closest(".sheet-wrap, .routines, .list.scrolls, .wk-list.scrolls, .wk-add, .home-pane, .ideas-page, .side-panel, .kids-pane, .next-pane, .toast")) { startY = null; return; }
+    if (e.target.closest(".sheet-wrap, .tune, #ldPrev, .routines, .list.scrolls, .wk-list.scrolls, .wk-add, .home-pane, .ideas-page, .side-panel, .kids-pane, .next-pane, .toast")) { startY = null; return; }
     fromInput = !!e.target.closest("input");
     startY = e.clientY; startX = e.clientX; startT = performance.now();
   });
@@ -2562,7 +2584,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
   let wheelAcc = 0, wheelTimer;
   document.addEventListener("wheel", e => {
-    if (e.target.closest(".sheet-wrap, .routines, .list.scrolls, .wk-list.scrolls, .home-pane, .ideas-page, .side-panel, .kids-pane, .next-pane")) return;
+    if (e.target.closest(".sheet-wrap, .tune, #ldPrev, .routines, .list.scrolls, .wk-list.scrolls, .home-pane, .ideas-page, .side-panel, .kids-pane, .next-pane")) return;
     wheelAcc += e.deltaY; clearTimeout(wheelTimer);
     wheelTimer = setTimeout(() => wheelAcc = 0, 180);
     if (Math.abs(wheelAcc) > 80) { go(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; }
@@ -4724,6 +4746,26 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 
   fillWeekly();
 
+  // ---- Settings > Adjust dock and loading screen: device-only placement (slate.tune) so it can be set by eye, then made the default ----
+  const TUNE_KEYS = { dockY: ["tDockY", "tvDockY", "--dock-y"], dockPad: ["tDockPad", "tvDockPad", "--dock-pad"], ldExt: ["tLdExt", "tvLdExt", "--ld-ext"] };
+  let tune = { dockY: 0, dockPad: 0, ldExt: 0 };
+  try { const t = JSON.parse(localStorage.getItem("slate.tune") || "{}"); for (const k in TUNE_KEYS) if (Number.isFinite(t[k])) tune[k] = t[k]; } catch (e) {}
+  function applyTune() {
+    for (const k in TUNE_KEYS) {
+      const [inp, out, v] = TUNE_KEYS[k];
+      document.documentElement.style.setProperty(v, tune[k] + "px");
+      $(inp).value = tune[k]; $(out).textContent = (tune[k] > 0 && k !== "ldExt" ? "+" : "") + tune[k];
+    }
+  }
+  const saveTune = () => { try { localStorage.setItem("slate.tune", JSON.stringify(tune)); } catch (e) {} };
+  for (const k in TUNE_KEYS) $(TUNE_KEYS[k][0]).addEventListener("input", e => { tune[k] = Math.round(+e.target.value) || 0; applyTune(); saveTune(); if (k === "ldExt") $("ldPrev").hidden = false; });
+  $("tuneOpt").addEventListener("click", () => { $("settingsSheet").classList.remove("open"); applyTune(); $("tunePanel").hidden = false; });
+  $("tunePrev").addEventListener("click", () => { $("ldPrev").hidden = !$("ldPrev").hidden; });
+  $("ldPrev").addEventListener("click", () => { $("ldPrev").hidden = true; });
+  $("tuneReset").addEventListener("click", () => { tune = { dockY: 0, dockPad: 0, ldExt: 0 }; applyTune(); saveTune(); });
+  $("tuneDone").addEventListener("click", () => { saveTune(); $("tunePanel").hidden = true; $("ldPrev").hidden = true; notify("Placement saved. Tell Claude when it looks right.", {}); });
+  applyTune();
+
   // Settings > Send screen size: sends only the screen and page measurements below (no personal data) so display problems can be fixed.
   $("sendScreen").addEventListener("click", async () => {
     const val = $("sendScreenVal"), say = t => { val.textContent = t; };
@@ -4735,7 +4777,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       inner: [innerWidth, innerHeight], outer: [outerWidth, outerHeight], screen: [screen.width, screen.height], avail: [screen.availWidth, screen.availHeight],
       visual: vv ? [Math.round(vv.width), Math.round(vv.height), Math.round(vv.offsetTop), vv.scale] : null,
       clientH: document.documentElement.clientHeight, bodyH: document.body.offsetHeight, appH: Math.round($("app").getBoundingClientRect().height),
-      build: window.SLATE_BUILD || "", href: location.href, dockBottom: Math.round(dock.bottom), fullh: document.documentElement.classList.contains("fullh"), fullH: cs.getPropertyValue("--full-h"), docH: document.documentElement.offsetHeight, scrollY: window.scrollY, safeTop: pc.paddingTop, safeBottom: pc.paddingBottom,
+      build: window.SLATE_BUILD || "", tune: (() => { try { return JSON.parse(localStorage.getItem("slate.tune") || "null"); } catch (e) { return null; } })(), href: location.href, dockBottom: Math.round(dock.bottom), fullh: document.documentElement.classList.contains("fullh"), fullH: cs.getPropertyValue("--full-h"), docH: document.documentElement.offsetHeight, scrollY: window.scrollY, safeTop: pc.paddingTop, safeBottom: pc.paddingBottom,
       dpr: devicePixelRatio, standalone: navigator.standalone === true, displayMode: matchMedia("(display-mode: standalone)").matches,
       orient: screen.orientation && screen.orientation.type, ua: navigator.userAgent, v: (document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') || {}).content || ""
     };
