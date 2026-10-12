@@ -32,8 +32,10 @@
 }
 /* ---------- Video background: blurred loop behind frosted "liquid glass" surfaces ---------- */
 #bgLayer { position: fixed; inset: 0; bottom: calc(-1 * var(--dock-gap, 0px)); z-index: -1; overflow: hidden; display: none; background: #2a6aa8; pointer-events: none; }
-html[data-bg] { background: #2a6aa8; }
+html[data-bg] { background: var(--edge, #2a6aa8); }
 html[data-bg] body { background: transparent; }
+/* Section titles stay white on the glass look, whatever color they were given for the plain looks */
+html[data-bg] .h-label, html[data-bg] .h-label * { color: #fff !important; }
 html[data-bg] #bgLayer { display: block; }
 #bgLayer video { position: absolute; left: -6%; top: -6%; width: 112%; height: 112%; object-fit: cover; filter: blur(16px) saturate(1.15); }
 #bgLayer::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,26,60,.34), rgba(6,26,60,.22) 55%, rgba(4,18,44,.40)); }
@@ -2754,6 +2756,32 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     }
     if (typeof syncStatusBar === "function") syncStatusBar();
   };
+  // Some windows (iPad) can't draw under the status bar, so that strip shows a flat color. Matching it to the top edge of the background keeps the strip from looking like a separate bar.
+  const edgeCv = document.createElement("canvas"); edgeCv.width = 16; edgeCv.height = 2;
+  let edgePoster = null, edgePosterSrc = "", edgeLast = "";
+  function sampleEdge() {
+    const root = document.documentElement;
+    if (!root.hasAttribute("data-bg")) { if (edgeLast) { root.style.removeProperty("--edge"); edgeLast = ""; syncStatusBar(); } return; }
+    let src = null, w = 0, h = 0;
+    if (bgVid.readyState >= 2 && bgVid.videoWidth) { src = bgVid; w = bgVid.videoWidth; h = bgVid.videoHeight; }
+    else {
+      const ps = bgVid.poster || "";
+      if (ps && ps !== edgePosterSrc) { edgePosterSrc = ps; edgePoster = new Image(); edgePoster.onload = sampleEdge; edgePoster.src = ps; }
+      if (edgePoster && edgePoster.complete && edgePoster.naturalWidth) { src = edgePoster; w = edgePoster.naturalWidth; h = edgePoster.naturalHeight; }
+    }
+    if (!src) return;
+    try {
+      const c = edgeCv.getContext("2d", { willReadFrequently: true });
+      c.drawImage(src, 0, 0, w, Math.max(1, h * .08), 0, 0, 16, 2);
+      const d = c.getImageData(0, 0, 16, 2).data; let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      // the tint laid over the background at its top edge (see #bgLayer::after)
+      const A = .34, mix = (v, t) => Math.round(v / n * (1 - A) + t * A);
+      const col = `rgb(${mix(r, 6)},${mix(g, 26)},${mix(b, 60)})`;
+      if (col !== edgeLast) { edgeLast = col; root.style.setProperty("--edge", col); syncStatusBar(); }
+    } catch (e) {}
+  }
+  setInterval(sampleEdge, 2500); setTimeout(sampleEdge, 400); setTimeout(sampleEdge, 1500);
   document.addEventListener("visibilitychange", () => {
     if (!document.documentElement.hasAttribute("data-bg") || !bgVid.getAttribute("src")) return;
     if (document.hidden) bgVid.pause(); else { const pl = bgVid.play(); if (pl && pl.catch) pl.catch(() => {}); }
@@ -2772,7 +2800,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   // The installed app's status bar takes this color, so it always matches the screen
   function syncStatusBar() {
     let bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#f2f2f2";
-    if (document.documentElement.hasAttribute("data-bg")) bg = "#2a6aa8";
+    if (document.documentElement.hasAttribute("data-bg")) bg = document.documentElement.style.getPropertyValue("--edge").trim() || "#2a6aa8";
     let m = document.getElementById("themeColor");
     if (!m) {
       document.querySelectorAll('meta[name="theme-color"]').forEach(x => x.remove());
