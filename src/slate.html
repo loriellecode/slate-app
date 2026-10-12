@@ -313,6 +313,9 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .sheet .close { margin-top: 18px; width: 100%; padding: 14px; border-radius: 999px; background: var(--bg); font-size: 16px; flex: 0 0 auto; }
 .slot-time { display: flex; justify-content: space-between; align-items: center; padding-block: 12px; border-top: 1.5px solid var(--line); font-size: 17px; color: var(--muted); }
 .slot-time input { font: inherit; font-size: 17px; color: var(--ink); background: var(--bg); border: 0; border-radius: 999px; padding: 8px 14px; min-height: 40px; }
+.slot-rep { padding-block: 12px; border-top: 1.5px solid var(--line); display: flex; }
+.slot-rep .seg { width: 100%; }
+.slot-rep .seg button { flex: 1; padding: 9px 12px; font-size: 15px; }
 .slot-list { overflow-y: auto; scrollbar-width: none; min-height: 0; flex: 1 1 auto; max-height: 40vh; }
 .slot-list::-webkit-scrollbar { display: none; }
 .slot-row { display: flex; align-items: center; border-top: 1.5px solid var(--line); }
@@ -1199,6 +1202,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   <div class="sheet">
     <h2>Add a routine</h2>
     <label class="slot-time"><span>Time (optional)</span><input type="time" id="slotTime" aria-label="Time (optional)"></label>
+    <div class="slot-rep"><div class="seg" id="slotRep" role="tablist" aria-label="How often"><button type="button" role="tab" data-r="once" aria-selected="true">Just once</button><button type="button" role="tab" data-r="week" aria-selected="false" id="slotWeekBtn">Every week</button></div></div>
     <div class="slot-list" id="slotList"></div>
     <form class="slot-add" id="slotAddForm" autocomplete="off">
       <input type="text" id="slotNew" placeholder="Add routine" aria-label="New routine name" enterkeyhint="done" maxlength="80">
@@ -1268,6 +1272,23 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   const routines = store.__routines;
   const tasksAt = k => (store[k] ||= []);
   const tasksFor = d => tasksAt(keyOf(d));
+
+  // Weekly routines: a rule ({id,text,t,dow,upto}) keeps the same task on that weekday, filled in 12 weeks ahead each time Slate opens.
+  // Days already filled are never touched again, so deleting one week's task stays deleted.
+  if (!Array.isArray(store.__weekly)) store.__weekly = [];
+  function fillWeekly() {
+    const horizon = addDays(today, 84); let changed = false;
+    store.__weekly.forEach(r => {
+      if (!r || !r.text || !r.upto) return;
+      let d = addDays(dateOf(r.upto), 7);
+      for (let guard = 0; d <= horizon && guard < 60; guard++, d = addDays(d, 7)) {
+        const arr = tasksAt(keyOf(d));
+        if (!arr.some(x => x.rid === r.id)) { const t = { t: r.t || "", text: r.text, done: false, rid: r.id }; arr.splice(undoneCount(arr), 0, t); placeByTime(arr, t); }
+        r.upto = keyOf(d); changed = true;
+      }
+    });
+    if (changed) save();
+  }
 
   // Finished tasks always sit at the bottom
   function normalize(arr) { const u = arr.filter(t => !t.done), d = arr.filter(t => t.done); arr.length = 0; arr.push(...u, ...d); return arr; }
@@ -1555,6 +1576,12 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   // ---------- double-tap an empty slot: pick one of your routines ----------
   let slotDay = null, slotArm = 0; // taps are ignored right after it opens, so a finger still resting on the screen can't pick anything
   const slotArmed = () => Date.now() < slotArm;
+  let slotRep = "once";
+  function setSlotRep() {
+    $("slotRep").querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.r === slotRep)));
+    $("slotWeekBtn").textContent = slotDay ? "Every " + DAYS[slotDay.getDay()].charAt(0) + DAYS[slotDay.getDay()].slice(1).toLowerCase() : "Every week";
+  }
+  $("slotRep").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || slotArmed()) return; slotRep = b.dataset.r; setSlotRep(); });
   function buildSlotList(freshText) {
     const box = $("slotList"); box.replaceChildren();
     if (!routines.length) { const e = document.createElement("div"); e.className = "slot-empty"; e.textContent = "No routines yet. Add one below."; box.appendChild(e); return; }
@@ -1568,14 +1595,14 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   }
   function openSlotSheet(d) {
     if ($("slotSheet").classList.contains("open")) return;
-    slotDay = d; $("slotTime").value = ""; $("slotNew").value = ""; slotArm = Date.now() + 900;
+    slotDay = d; slotRep = "once"; setSlotRep(); $("slotTime").value = ""; $("slotNew").value = ""; slotArm = Date.now() + 900;
     buildSlotList(); $("slotSheet").classList.add("open");
   }
   const closeSlotSheet = () => { $("slotSheet").classList.remove("open"); $("slotNew").blur(); };
   $("slotClose").addEventListener("click", () => { if (!slotArmed()) closeSlotSheet(); });
   $("slotSheet").addEventListener("click", e => { if (e.target === $("slotSheet") && !slotArmed()) closeSlotSheet(); });
   // lifting the finger after a press-and-hold re-arms the wait, so nothing is chosen by the release itself
-  $("slotSheet").addEventListener("touchend", () => { if (Date.now() < slotArm + 400) slotArm = Math.max(slotArm, Date.now() + 500); }, { passive: true });
+  $("slotSheet").addEventListener("touchend", () => { if (slotArmed()) slotArm = Math.max(slotArm, Date.now() + 500); }, { passive: true });
   $("slotList").addEventListener("click", e => {
     if (slotArmed()) return;
     const xb = e.target.closest(".slot-x");
@@ -1586,7 +1613,12 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const b = e.target.closest(".opt"); if (!b || !slotDay) return;
     const text = routines[+b.dataset.i]; if (!text) return;
     const arr = tasksFor(slotDay), task = { t: $("slotTime").value || "", text, done: false };
+    if (slotRep === "week") {
+      const rule = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, t: task.t, dow: slotDay.getDay(), upto: keyOf(slotDay) };
+      store.__weekly.push(rule); task.rid = rule.id;
+    }
     arr.push(task); normalize(arr); if (task.t) placeByTime(arr, task); save();
+    if (slotRep === "week") fillWeekly();
     closeSlotSheet();
     if (keyOf(slotDay) === keyOf(current)) refreshList({ newTask: task });
   });
@@ -4676,6 +4708,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   setInterval(newDayCheck, 30000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") newDayCheck(); });
   setInterval(() => { if (document.visibilityState === "visible" && session) { checkChoreInbox(false); checkProgress(); } }, 60000);
+
+  fillWeekly();
 
   // ---- Date icon: an Apple-Calendar-style tile that follows today's date. Drawn on this device, so it works offline. ----
   // Weekday is the 3-letter capital form Apple uses (WED); other languages use the system's short weekday, capitalised.
