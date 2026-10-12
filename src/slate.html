@@ -831,7 +831,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   .icon-btn { width: 42px; height: 42px; }
   header { padding-bottom: 14px; }
   main { padding-top: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
-  .dock { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; justify-content: space-around; align-items: flex-end; padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px); background: var(--card); border-radius: 30px 30px 0 0; box-shadow: 0 -6px 26px var(--shadow); }
+  .dock { display: flex; position: fixed; left: 0; right: 0; z-index: 15; justify-content: space-around; align-items: flex-end; bottom: calc(-1 * var(--dock-gap, 0px)); padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) * .5 + var(--dock-gap, 0px) + 4px); background: var(--card); border-radius: 30px 30px 0 0; box-shadow: 0 -6px 26px var(--shadow); }
+  .dock::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 120px; background: var(--card); }
   .dock button { position: relative; width: 66px; height: 54px; display: grid; place-items: center; color: var(--muted); -webkit-tap-highlight-color: transparent; }
   .dock svg { width: 24px; height: 24px; overflow: visible; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .4s var(--ease), stroke .3s ease; }
   .dock .dot { fill: currentColor; stroke: none; }
@@ -4710,6 +4711,16 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   setInterval(() => { if (document.visibilityState === "visible" && session) { checkChoreInbox(false); checkProgress(); } }, 60000);
 
   fillWeekly();
+
+  // On some iPhones the home-screen app's page ends a little above the bottom of the screen; let the dock reach the real edge.
+  (function () {
+    const fit = () => {
+      const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+      const gap = standalone ? Math.round(screen.height - window.innerHeight) : 0;
+      document.documentElement.style.setProperty("--dock-gap", (gap > 0 && gap < 90 ? gap : 0) + "px");
+    };
+    fit(); window.addEventListener("resize", fit); window.addEventListener("orientationchange", () => setTimeout(fit, 300));
+  })();
 
   // ---- Date icon: an Apple-Calendar-style tile that follows today's date. Drawn on this device, so it works offline. ----
   // Weekday is the 3-letter capital form Apple uses (WED); other languages use the system's short weekday, capitalised.
