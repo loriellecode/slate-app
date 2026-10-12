@@ -28,6 +28,7 @@ head = f"""<!doctype html>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
 <script>
+  window.SLATE_BUILD = "__BUILD__";
   // iOS 26 home-screen apps: size the page to the whole screen before anything draws (see html.fullh in the styles).
   (function () {{ try {{
     var sa = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
@@ -60,9 +61,8 @@ if ("serviceWorker" in navigator) {
 if DIST.exists():
     shutil.rmtree(DIST)
 shutil.copytree(PUBLIC, DIST)
-(DIST / "index.html").write_text(head + body + "\n" + sw_register + "\n</body>\n</html>\n")
-
-version = time.strftime("%Y%m%d%H%M%S")
+version = time.strftime("%Y%m%d%H%M%S", time.gmtime())
+(DIST / "index.html").write_text((head + body + "\n" + sw_register + "\n</body>\n</html>\n").replace("__BUILD__", version[:4] + "-" + version[4:6] + "-" + version[6:8] + " " + version[8:10] + ":" + version[10:12] + " UTC"))
 (DIST / "sw.js").write_text((ROOT / "tools" / "sw.template.js").read_text().replace("__VERSION__", version))
 (DIST / ".nojekyll").write_text("")
 print(f"Built dist/ (version {version})")

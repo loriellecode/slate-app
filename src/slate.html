@@ -4735,7 +4735,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       inner: [innerWidth, innerHeight], outer: [outerWidth, outerHeight], screen: [screen.width, screen.height], avail: [screen.availWidth, screen.availHeight],
       visual: vv ? [Math.round(vv.width), Math.round(vv.height), Math.round(vv.offsetTop), vv.scale] : null,
       clientH: document.documentElement.clientHeight, bodyH: document.body.offsetHeight, appH: Math.round($("app").getBoundingClientRect().height),
-      dockBottom: Math.round(dock.bottom), fullh: document.documentElement.classList.contains("fullh"), fullH: cs.getPropertyValue("--full-h"), docH: document.documentElement.offsetHeight, scrollY: window.scrollY, safeTop: pc.paddingTop, safeBottom: pc.paddingBottom,
+      build: window.SLATE_BUILD || "", href: location.href, dockBottom: Math.round(dock.bottom), fullh: document.documentElement.classList.contains("fullh"), fullH: cs.getPropertyValue("--full-h"), docH: document.documentElement.offsetHeight, scrollY: window.scrollY, safeTop: pc.paddingTop, safeBottom: pc.paddingBottom,
       dpr: devicePixelRatio, standalone: navigator.standalone === true, displayMode: matchMedia("(display-mode: standalone)").matches,
       orient: screen.orientation && screen.orientation.type, ua: navigator.userAgent, v: (document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') || {}).content || ""
     };
@@ -4758,7 +4758,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       else { root.classList.remove("fullh"); root.style.removeProperty("--full-h"); }
       if (window.scrollY) window.scrollTo(0, 0);
       const inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0, di = $("dispInfo");
-      if (di) di.textContent = `Display ${window.innerWidth}×${window.innerHeight} of ${screen.height} · gap ${gap} · ${standalone ? "app" : "browser"}`;
+      if (di) di.textContent = `Version ${window.SLATE_BUILD || "preview"} · ${location.host || "local"} · Display ${window.innerWidth}×${window.innerHeight} of ${screen.height} · gap ${gap}${root.classList.contains("fullh") ? " · full height on" : ""} · ${standalone ? "app" : "browser"}`;
     };
     fit(); setTimeout(fit, 400); setTimeout(fit, 1500);
     // the full-height page must never stay scrolled: put it back once nothing is being typed
