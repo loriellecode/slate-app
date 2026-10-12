@@ -1018,7 +1018,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <button class="opt" id="clearCalOpt"><span>Clear calendar</span><span id="clearCalVal" style="color:var(--muted)">›</span></button>
     <button class="opt" id="accentsOpt"><span>Accents</span><span style="color:var(--muted)">›</span></button>
     <button class="opt" id="backupOpt"><span>Back up or restore data</span><span style="color:var(--muted)">›</span></button>
-    <p class="feel-hint" id="dispInfo" style="margin:14px 0 0;font-size:12px"></p>
+    <button class="opt" id="sendScreen"><span>Send screen size</span><span id="sendScreenVal" style="color:var(--muted)">›</span></button>
+    <p class="feel-hint" id="dispInfo" style="margin:10px 0 0;font-size:12px"></p>
     <button class="close" data-close>Done</button>
   </div>
 </div>
@@ -4716,6 +4717,26 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   setInterval(() => { if (document.visibilityState === "visible" && session) { checkChoreInbox(false); checkProgress(); } }, 60000);
 
   fillWeekly();
+
+  // Settings > Send screen size: sends only the screen and page measurements below (no personal data) so display problems can be fixed.
+  $("sendScreen").addEventListener("click", async () => {
+    const val = $("sendScreenVal"), say = t => { val.textContent = t; };
+    if (!CAN_SYNC) { say("Open the installed app"); return; }
+    const cs = getComputedStyle(document.documentElement), vv = window.visualViewport;
+    const pr = document.createElement("div"); pr.style.cssText = "position:fixed;left:0;top:0;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0"; document.body.appendChild(pr);
+    const pc = getComputedStyle(pr), dock = $("dock").getBoundingClientRect();
+    const info = {
+      inner: [innerWidth, innerHeight], outer: [outerWidth, outerHeight], screen: [screen.width, screen.height], avail: [screen.availWidth, screen.availHeight],
+      visual: vv ? [Math.round(vv.width), Math.round(vv.height), Math.round(vv.offsetTop), vv.scale] : null,
+      clientH: document.documentElement.clientHeight, bodyH: document.body.offsetHeight, appH: Math.round($("app").getBoundingClientRect().height),
+      dockBottom: Math.round(dock.bottom), dockGap: cs.getPropertyValue("--dock-gap"), safeTop: pc.paddingTop, safeBottom: pc.paddingBottom,
+      dpr: devicePixelRatio, standalone: navigator.standalone === true, displayMode: matchMedia("(display-mode: standalone)").matches,
+      orient: screen.orientation && screen.orientation.type, ua: navigator.userAgent, v: (document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') || {}).content || ""
+    };
+    pr.remove(); say("Sending…");
+    try { const r = await rpc("report_screen", { p_info: JSON.stringify(info) }); say(r === "ok" ? "Sent. Thank you" : "Try again later"); }
+    catch (e) { say("Couldn't send"); }
+  });
 
   // On some iPhones the home-screen app's page ends above the bottom of the screen. Measure the missing strip and let full-screen layers and the dock reach the real edge.
   (function () {
