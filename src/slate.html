@@ -311,6 +311,19 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .dd-empty { color: var(--muted); padding-block: 18px; border-top: 1.5px solid var(--line); }
 .sheet .opt { display: flex; justify-content: space-between; align-items: center; padding-block: 14px; border-top: 1.5px solid var(--line); font-size: 18px; width: 100%; text-align: left; }
 .sheet .close { margin-top: 18px; width: 100%; padding: 14px; border-radius: 999px; background: var(--bg); font-size: 16px; flex: 0 0 auto; }
+.slot-time { display: flex; justify-content: space-between; align-items: center; padding-block: 12px; border-top: 1.5px solid var(--line); font-size: 17px; color: var(--muted); }
+.slot-time input { font: inherit; font-size: 17px; color: var(--ink); background: var(--bg); border: 0; border-radius: 999px; padding: 8px 14px; min-height: 40px; }
+.slot-list { overflow-y: auto; scrollbar-width: none; min-height: 0; flex: 1 1 auto; max-height: 40vh; }
+.slot-list::-webkit-scrollbar { display: none; }
+.slot-list .opt { min-height: 52px; font-size: 18px; overflow-wrap: anywhere; }
+.slot-list .opt::after { content: "+"; color: var(--soft); font-size: 22px; line-height: 1; margin-left: 12px; flex: 0 0 auto; }
+.slot-list .opt.fresh { animation: slotFresh 1.1s ease; }
+@keyframes slotFresh { from { background: color-mix(in srgb, var(--green) 25%, transparent); } to { background: transparent; } }
+.slot-empty { color: var(--muted); padding-block: 16px; border-top: 1.5px solid var(--line); }
+.slot-add { display: flex; gap: 8px; padding-top: 14px; border-top: 1.5px solid var(--line); flex: 0 0 auto; }
+.slot-add input { flex: 1; min-width: 0; border: 0; border-radius: 999px; background: var(--bg); color: var(--ink); font: inherit; font-size: 17px; padding: 12px 16px; outline: none; }
+.slot-add input::placeholder { color: var(--muted); }
+.slot-add button { padding: 12px 18px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 16px; flex: 0 0 auto; }
 .confirm-text { font-size: 18px; color: var(--muted); margin: -8px 0 22px; overflow-wrap: anywhere; }
 .confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .confirm-btns button { padding: 15px; border-radius: 999px; font-size: 16px; background: var(--bg); }
@@ -1180,6 +1193,18 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 </div>
 <div class="month-foot" id="monthFoot" aria-hidden="true"></div>
 <input type="file" id="avatarInput" accept="image/*" hidden>
+<div class="sheet-wrap" id="slotSheet">
+  <div class="sheet">
+    <h2>Add a routine</h2>
+    <label class="slot-time"><span>Time (optional)</span><input type="time" id="slotTime" aria-label="Time (optional)"></label>
+    <div class="slot-list" id="slotList"></div>
+    <form class="slot-add" id="slotAddForm" autocomplete="off">
+      <input type="text" id="slotNew" placeholder="Add routine" aria-label="New routine name" enterkeyhint="done" maxlength="80">
+      <button type="submit">Add routine</button>
+    </form>
+    <button type="button" class="close" id="slotClose">Close</button>
+  </div>
+</div>
 <div class="sheet-wrap" id="confirmSheet">
   <div class="sheet">
     <h2>Did you finish this?</h2>
@@ -1482,6 +1507,15 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     };
     textIn.addEventListener("keydown", e => { if (e.key === "Enter") textIn.blur(); });
     textIn.addEventListener("blur", commit);
+    // One tap on an empty slot types, as always. Two quick taps open your routines instead.
+    const tw = row.querySelector(".tw"); let lastTap = 0;
+    tw.addEventListener("touchend", e => {
+      if (task) return;
+      const now = Date.now();
+      if (now - lastTap < 380) { lastTap = 0; e.preventDefault(); setTimeout(() => textIn.blur(), 0); openSlotSheet(d); }
+      else lastTap = now;
+    }, { passive: false });
+    tw.addEventListener("dblclick", e => { if (task) return; e.preventDefault(); setTimeout(() => textIn.blur(), 0); openSlotSheet(d); });
     timeIn.addEventListener("change", () => {
       if (task) { task.t = timeIn.value || ""; placeByTime(tasksFor(d), task); save(); refreshList(); }
       else showTime();
@@ -1504,6 +1538,39 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     });
     return row;
   }
+
+  // ---------- double-tap an empty slot: pick one of your routines ----------
+  let slotDay = null;
+  function buildSlotList(freshText) {
+    const box = $("slotList"); box.replaceChildren();
+    if (!routines.length) { const e = document.createElement("div"); e.className = "slot-empty"; e.textContent = "No routines yet. Add one below."; box.appendChild(e); return; }
+    routines.forEach((r, i) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "opt" + (freshText && r === freshText ? " fresh" : ""); b.dataset.i = i; b.textContent = r; box.appendChild(b);
+    });
+    if (freshText) { const f = box.querySelector(".fresh"); if (f) requestAnimationFrame(() => f.scrollIntoView({ block: "nearest" })); }
+  }
+  function openSlotSheet(d) {
+    if ($("slotSheet").classList.contains("open")) return;
+    slotDay = d; $("slotTime").value = ""; $("slotNew").value = "";
+    buildSlotList(); $("slotSheet").classList.add("open");
+  }
+  const closeSlotSheet = () => { $("slotSheet").classList.remove("open"); $("slotNew").blur(); };
+  $("slotClose").addEventListener("click", closeSlotSheet);
+  $("slotSheet").addEventListener("click", e => { if (e.target === $("slotSheet")) closeSlotSheet(); });
+  $("slotList").addEventListener("click", e => {
+    const b = e.target.closest(".opt"); if (!b || !slotDay) return;
+    const text = routines[+b.dataset.i]; if (!text) return;
+    const arr = tasksFor(slotDay), task = { t: $("slotTime").value || "", text, done: false };
+    arr.push(task); normalize(arr); if (task.t) placeByTime(arr, task); save();
+    closeSlotSheet();
+    if (keyOf(slotDay) === keyOf(current)) refreshList({ newTask: task });
+  });
+  $("slotAddForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const v = $("slotNew").value.trim().slice(0, 80); if (!v) return;
+    if (!routines.some(r => r.trim().toLowerCase() === v.toLowerCase())) { routines.push(v); save(); }
+    $("slotNew").value = ""; buildSlotList(routines.find(r => r.trim().toLowerCase() === v.toLowerCase())); buildRoutines();
+  });
 
   function removeRow(row, task) {
     const arr = tasksFor(current);
@@ -4584,6 +4651,50 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   setInterval(newDayCheck, 30000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") newDayCheck(); });
   setInterval(() => { if (document.visibilityState === "visible" && session) { checkChoreInbox(false); checkProgress(); } }, 60000);
+
+  // ---- Date icon: an Apple-Calendar-style tile that follows today's date. Drawn on this device, so it works offline. ----
+  // Weekday is the 3-letter capital form Apple uses (WED); other languages use the system's short weekday, capitalised.
+  const dateIcon = (() => {
+    const BLUE = "#007AFF", EN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+    const FONT = '-apple-system, "SF Pro Display", system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif';
+    const dayWord = d => {
+      const lang = String(navigator.language || "en").toLowerCase();
+      if (lang.indexOf("en") === 0) return EN[d.getDay()];
+      try { return new Intl.DateTimeFormat(navigator.language, { weekday: "short" }).format(d).toUpperCase(); } catch (e) { return EN[d.getDay()]; }
+    };
+    // round = rounded corners with clear outside (browser tab only). Home-screen icons stay square and fully white: iOS rounds them itself and paints any clear pixels black.
+    function draw(size, d, round) {
+      const c = document.createElement("canvas"); c.width = c.height = size;
+      const x = c.getContext("2d"); x.fillStyle = "#fff";
+      if (round) { const r = size * .2237; x.beginPath(); x.moveTo(r, 0); x.arcTo(size, 0, size, size, r); x.arcTo(size, size, 0, size, r); x.arcTo(0, size, 0, 0, r); x.arcTo(0, 0, size, 0, r); x.closePath(); x.fill(); }
+      else x.fillRect(0, 0, size, size);
+      x.fillStyle = BLUE; x.textAlign = "center"; x.textBaseline = "alphabetic";
+      const fit = (txt, px, wt, maxW, y, ls) => {
+        x.font = `${wt} ${px}px ${FONT}`; if ("letterSpacing" in x) x.letterSpacing = (ls || 0) + "px";
+        const w = x.measureText(txt).width; if (w > maxW) x.font = `${wt} ${px * maxW / w}px ${FONT}`;
+        x.fillText(txt, size / 2, y);
+      };
+      fit(dayWord(d), size * .165, 600, size * .7, size * .285, size * .012);
+      fit(String(d.getDate()), size * .6, 300, size * .74, size * .805, 0);
+      return c;
+    }
+    let last = "";
+    function apply(force) {
+      const now = new Date(), k = keyOf(now);
+      if (k === last && !force) return; last = k;
+      try {
+        const head = document.head;
+        head.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"],link[rel="shortcut icon"]').forEach(l => l.remove());
+        const add = (rel, url, sizes) => { const l = document.createElement("link"); l.rel = rel; l.type = "image/png"; if (sizes) l.setAttribute("sizes", sizes); l.href = url; head.appendChild(l); };
+        add("icon", draw(64, now, true).toDataURL("image/png"), "64x64");
+        add("apple-touch-icon", draw(180, now, false).toDataURL("image/png"), "180x180");
+      } catch (e) {}
+    }
+    apply(true);
+    setInterval(() => apply(false), 30000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") apply(false); });
+    return { draw, dayWord, apply };
+  })();
 
   setAcctMode("in");
   updateAcctUI();
