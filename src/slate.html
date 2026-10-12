@@ -1328,17 +1328,20 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   save();
   const routines = store.__routines;
   const tasksAt = k => (store[k] ||= []);
+  let weeklyLimit = null; // furthest day the weekly routines are filled to; looking further ahead extends it, so they never run out
   const tasksFor = d => tasksAt(keyOf(d));
+  const ensureWeekly = d => { d = addDays(d, 42); if (weeklyLimit && d > weeklyLimit && store.__weekly && store.__weekly.length) fillWeekly(d); };
 
-  // Weekly routines: a rule ({id,text,t,dow,upto}) keeps the same task on that weekday, filled in 12 weeks ahead each time Slate opens.
+  // Weekly routines: a rule ({id,text,t,dow,upto}) keeps the same task on that weekday until you remove it: filled 12 weeks ahead each time Slate opens, and further whenever you look further ahead.
   // Days already filled are never touched again, so deleting one week's task stays deleted.
   if (!Array.isArray(store.__weekly)) store.__weekly = [];
-  function fillWeekly() {
-    const horizon = addDays(today, 84); let changed = false;
+  function fillWeekly(through) {
+    let horizon = addDays(today, 84); if (through && through > horizon) horizon = addDays(through, 84);
+    weeklyLimit = horizon; let changed = false;
     store.__weekly.forEach(r => {
       if (!r || !r.text || !r.upto) return;
       let d = addDays(dateOf(r.upto), 7);
-      for (let guard = 0; d <= horizon && guard < 60; guard++, d = addDays(d, 7)) {
+      for (let guard = 0; d <= horizon && guard < 400; guard++, d = addDays(d, 7)) {
         const arr = tasksAt(keyOf(d));
         if (!arr.some(x => x.rid === r.id)) { const t = { t: r.t || "", text: r.text, done: false, rid: r.id }; arr.splice(undoneCount(arr), 0, t); placeByTime(arr, t); }
         r.upto = keyOf(d); changed = true;
@@ -1495,6 +1498,19 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     $("confirmSheet").classList.add("open");
     return new Promise(res => confirmResolve = res);
   }
+  // A routine that repeats weekly: remove just this day, or stop it for good (this day and every later one)
+  async function askSeries(text) {
+    const no = $("confirmNo"), yes = $("confirmYes"), t0 = [no.textContent, yes.textContent];
+    no.textContent = "Just this day"; yes.textContent = "Every week";
+    const r = await askDone("Remove \u201C" + text + "\u201D from every week from here on, or only this day?");
+    no.textContent = t0[0]; yes.textContent = t0[1];
+    return r;
+  }
+  function endSeries(rid, fromKey) {
+    const i = store.__weekly.findIndex(r => r.id === rid); if (i > -1) store.__weekly.splice(i, 1);
+    Object.keys(store).forEach(k => { if (/^\d{4}-\d{2}-\d{2}$/.test(k) && k >= fromKey && Array.isArray(store[k])) store[k] = store[k].filter(t => t.rid !== rid); });
+    save();
+  }
   const closeConfirm = v => { $("confirmSheet").classList.remove("open"); if (confirmResolve) { confirmResolve(v); confirmResolve = null; } };
   $("confirmYes").addEventListener("click", () => closeConfirm(true));
   $("confirmNo").addEventListener("click", () => closeConfirm(false));
@@ -1585,7 +1601,17 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
         if (list) { fixPlaceholders(list); updateFade(list); }
         return;
       }
-      if (!text) { removeRow(row, task); return; }
+      if (!text) {
+        if (task.rid && store.__weekly.some(r => r.id === task.rid)) {
+          const rid = task.rid, from = keyOf(d);
+          askSeries(task.text || "this routine").then(all => {
+            if (all) endSeries(rid, from);
+            if (all && keyOf(current) === from) refreshList(); else removeRow(row, task);
+          });
+          return;
+        }
+        removeRow(row, task); return;
+      }
       task.text = text; save();
     };
     textIn.addEventListener("keydown", e => { if (e.key === "Enter") textIn.blur(); });
@@ -1870,7 +1896,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const next = target ? new Date(target) : addDays(current, dir);
     const oldFace = dayPane.firstChild, oldList = listPane.firstChild;
     const fromT = oldFace.style.transform; oldFace.style.transform = "";
-    current = next;
+    current = next; ensureWeekly(current);
     const newFace = buildFace(current), newList = buildList(current);
     dayPane.appendChild(newFace); listPane.appendChild(newList);
     setLabel();
@@ -1893,7 +1919,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const cards = [...weekPane.querySelectorAll(".wk-card")];
     const order = dir > 0 ? cards : [...cards].reverse();
     order.forEach((c, i) => c.animate(rollOut(dir, 140), { duration: 520, delay: i * 30, easing: SWOOSH, fill: "forwards" }));
-    current = target ? new Date(target) : addDays(current, 7 * dir);
+    current = target ? new Date(target) : addDays(current, 7 * dir); ensureWeekly(current);
     setLabel();
     setTimeout(() => {
       weekPane.replaceChildren(); buildWeek();
@@ -2165,6 +2191,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const old = monthPane.firstChild;
     const t = target ? new Date(target) : monthZoom ? addDays(current, dir * 7) : new Date(current.getFullYear(), current.getMonth() + dir, 1);
     current = monthZoom ? t : (t.getFullYear() === today.getFullYear() && t.getMonth() === today.getMonth()) ? new Date(today) : t;
+    ensureWeekly(current);
     const nv = buildMonth(current); monthPane.appendChild(nv);
     setLabel();
     const dist = Math.max(200, monthPane.clientHeight * .6), T = 760;
@@ -2795,6 +2822,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     }
     clearTimeout(clearCalTimer); b.dataset.confirm = ""; b.classList.remove("danger-confirm"); v.textContent = "›"; v.style.color = "";
     Object.keys(store).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).forEach(k => { delete store[k]; });
+    store.__weekly.length = 0; // weekly routines are tasks too, so they go with the calendar
     save(); $("settingsSheet").classList.remove("open");
     if (view === "week") buildWeek(); else if (view === "month") refreshMonth(); else if (view === "home") render(false); else if (view === "kids") { /* nothing on screen to refresh */ } else if (view === "next") renderNext(); else refreshList();
     showToast({ text: "Your calendar is cleared." });
