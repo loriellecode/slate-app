@@ -53,6 +53,11 @@ html[data-bg] ::placeholder { color: var(--muted); opacity: .75; }
 html[data-bg] .hint, html[data-bg] .month-foot { color: var(--ink); opacity: .75; }
 @media (prefers-reduced-transparency: reduce) { html[data-bg] * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; } }
 html, body { height: 100%; }
+/* iOS 26 home-screen apps with a see-through status bar get a page that is one status bar shorter than the screen, leaving a strip at the bottom.
+   Fixed layers can't draw into that strip, so in that case the page is made the full screen height and the full-screen layers are placed on it instead. */
+html.fullh, html.fullh body { height: var(--full-h, 100%); }
+html.fullh body { position: relative; }
+html.fullh :is(#bgLayer, #splash, .sheet-wrap, .ideas-page, .side-panel, .dock, .hint, .month-foot) { position: absolute; }
 html { box-sizing: border-box; overflow: hidden; overscroll-behavior: none; }
 /* Day and month names are stored in Title Case; Classic shows them in capitals */
 .splash-date, .splash-day, .splash-word, .label, .weekday, .wk-day, .today-line, .m-head span { text-transform: uppercase; }
@@ -4730,7 +4735,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       inner: [innerWidth, innerHeight], outer: [outerWidth, outerHeight], screen: [screen.width, screen.height], avail: [screen.availWidth, screen.availHeight],
       visual: vv ? [Math.round(vv.width), Math.round(vv.height), Math.round(vv.offsetTop), vv.scale] : null,
       clientH: document.documentElement.clientHeight, bodyH: document.body.offsetHeight, appH: Math.round($("app").getBoundingClientRect().height),
-      dockBottom: Math.round(dock.bottom), dockGap: cs.getPropertyValue("--dock-gap"), safeTop: pc.paddingTop, safeBottom: pc.paddingBottom,
+      dockBottom: Math.round(dock.bottom), fullh: document.documentElement.classList.contains("fullh"), fullH: cs.getPropertyValue("--full-h"), docH: document.documentElement.offsetHeight, scrollY: window.scrollY, safeTop: pc.paddingTop, safeBottom: pc.paddingBottom,
       dpr: devicePixelRatio, standalone: navigator.standalone === true, displayMode: matchMedia("(display-mode: standalone)").matches,
       orient: screen.orientation && screen.orientation.type, ua: navigator.userAgent, v: (document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') || {}).content || ""
     };
@@ -4747,12 +4752,20 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
       if (!probe.parentNode) document.body.appendChild(probe);
       const full = Math.max(screen.height, window.outerHeight || 0, probe.offsetHeight || 0);
-      const gap = standalone ? Math.round(full - window.innerHeight) : 0;
-      document.documentElement.style.setProperty("--dock-gap", (gap > 0 && gap < 90 ? gap : 0) + "px");
+      const gap = standalone ? Math.round(full - window.innerHeight) : 0, root = document.documentElement;
+      root.style.setProperty("--dock-gap", "0px");
+      if (gap > 0 && gap < 120) { root.classList.add("fullh"); root.style.setProperty("--full-h", (window.innerHeight + gap) + "px"); }
+      else { root.classList.remove("fullh"); root.style.removeProperty("--full-h"); }
+      if (window.scrollY) window.scrollTo(0, 0);
       const inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0, di = $("dispInfo");
       if (di) di.textContent = `Display ${window.innerWidth}×${window.innerHeight} of ${screen.height} · gap ${gap} · ${standalone ? "app" : "browser"}`;
     };
     fit(); setTimeout(fit, 400); setTimeout(fit, 1500);
+    // the full-height page must never stay scrolled: put it back once nothing is being typed
+    const typing = () => document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && document.activeElement.type !== "time";
+    const unscroll = () => { if (document.documentElement.classList.contains("fullh") && window.scrollY && !typing()) window.scrollTo(0, 0); };
+    window.addEventListener("scroll", unscroll, { passive: true });
+    document.addEventListener("focusout", () => setTimeout(unscroll, 60));
     window.addEventListener("resize", fit); window.addEventListener("pageshow", fit);
     window.addEventListener("orientationchange", () => setTimeout(fit, 300));
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") fit(); });
