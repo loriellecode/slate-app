@@ -1509,8 +1509,19 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     textIn.addEventListener("blur", commit);
     // One tap on an empty slot types, as always. Two quick taps open your routines instead.
     const tw = row.querySelector(".tw"); let lastTap = 0;
+    let hold = 0, held = false, hx = 0, hy = 0;
+    const stopHold = () => { clearTimeout(hold); hold = 0; };
+    tw.addEventListener("touchstart", e => {
+      if (task) return; held = false; const t = e.touches[0]; hx = t.clientX; hy = t.clientY; stopHold();
+      hold = setTimeout(() => { held = true; lastTap = 0; textIn.blur(); openSlotSheet(d); }, 450);
+    }, { passive: true });
+    tw.addEventListener("touchmove", e => { const t = e.touches[0]; if (Math.hypot(t.clientX - hx, t.clientY - hy) > 10) stopHold(); }, { passive: true });
+    tw.addEventListener("touchcancel", stopHold);
+    tw.addEventListener("contextmenu", e => { if (!task) e.preventDefault(); });
     tw.addEventListener("touchend", e => {
       if (task) return;
+      stopHold();
+      if (held) { held = false; e.preventDefault(); return; }
       const now = Date.now();
       if (now - lastTap < 380) { lastTap = 0; e.preventDefault(); setTimeout(() => textIn.blur(), 0); openSlotSheet(d); }
       else lastTap = now;
