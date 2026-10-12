@@ -4794,9 +4794,11 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
       if (!probe.parentNode) document.body.appendChild(probe);
       const full = Math.max(screen.height, window.outerHeight || 0, probe.offsetHeight || 0);
-      const gap = standalone ? Math.round(full - window.innerHeight) : 0, root = document.documentElement;
+      // clientHeight is the real visible page; innerHeight grows to match once the page is made taller, so it can't be used to re-check
+      const root = document.documentElement, seen = Math.min(window.innerHeight, root.clientHeight || window.innerHeight);
+      const gap = standalone ? Math.round(full - seen) : 0;
       root.style.setProperty("--dock-gap", "0px");
-      if (gap > 0 && gap < 120) { root.classList.add("fullh"); root.style.setProperty("--full-h", (window.innerHeight + gap) + "px"); }
+      if (gap > 0 && gap < 120) { root.classList.add("fullh"); root.style.setProperty("--full-h", (seen + gap) + "px"); }
       else { root.classList.remove("fullh"); root.style.removeProperty("--full-h"); }
       if (window.scrollY) window.scrollTo(0, 0);
       const inset = parseFloat(getComputedStyle(probe).paddingBottom) || 0, di = $("dispInfo");

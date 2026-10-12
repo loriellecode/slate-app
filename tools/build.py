@@ -34,8 +34,9 @@ head = f"""<!doctype html>
   // iOS 26 home-screen apps: size the page to the whole screen before anything draws (see html.fullh in the styles).
   (function () {{ try {{
     var sa = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
-    var gap = sa ? Math.round(Math.max(screen.height, window.outerHeight || 0) - window.innerHeight) : 0;
-    if (gap > 0 && gap < 120) {{ document.documentElement.classList.add("fullh"); document.documentElement.style.setProperty("--full-h", (window.innerHeight + gap) + "px"); }}
+    var seen = Math.min(window.innerHeight, document.documentElement.clientHeight || window.innerHeight);
+    var gap = sa ? Math.round(Math.max(screen.height, window.outerHeight || 0) - seen) : 0;
+    if (gap > 0 && gap < 120) {{ document.documentElement.classList.add("fullh"); document.documentElement.style.setProperty("--full-h", (seen + gap) + "px"); }}
   }} catch (e) {{}} }})();
 </script>
 <style>body{{margin:0}}[hidden]{{display:none!important}}img{{max-width:100%}}</style>
