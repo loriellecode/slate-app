@@ -112,8 +112,10 @@ input { -webkit-user-select: text; user-select: text; }
 #splash.out { opacity: 0; pointer-events: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #splash { --ld-bg: #000000; --ld-ink: #f5f5f5; --ld-mute: #6e6e6e; } }
 :root[data-theme="dark"] #splash { --ld-bg: #000000; --ld-ink: #f5f5f5; --ld-mute: #6e6e6e; }
+.ld-group { display: flex; flex-direction: column; align-items: center; gap: 22px; transition: opacity .4s ease; }
+#splash.authing .ld-count { visibility: hidden; }
 .ld-ring { width: clamp(120px, 20vw, 190px); height: auto; display: block; overflow: visible; fill: var(--ld-ink); animation: ldin .6s ease both; }
-.ld-count { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 34px); text-align: center; animation: ldin .6s ease both; }
+.ld-count { text-align: center; animation: ldin .6s ease both; transition: opacity .4s ease; }
 .ld-pct { font-family: "Bebas Neue", "Arial Narrow", Impact, sans-serif; font-weight: 400; font-size: clamp(24px, 3.2vw, 32px); line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; text-transform: none; }
 .ld-word { font-family: "Outfit", "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 300; font-size: 13px; letter-spacing: .04em; color: var(--ld-mute); margin-top: 6px; text-transform: none; }
 @keyframes ldin { from { opacity: 0; } to { opacity: 1; } }
@@ -315,6 +317,15 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .dd-item .tm { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
 .dd-empty { color: var(--muted); padding-block: 18px; border-top: 1.5px solid var(--line); }
 .sheet .opt { display: flex; justify-content: space-between; align-items: center; padding-block: 14px; border-top: 1.5px solid var(--line); font-size: 18px; width: 100%; text-align: left; }
+.crop-stage { position: relative; width: min(300px, calc(100vw - 96px)); aspect-ratio: 1; margin: 0 auto; border-radius: 50%; overflow: hidden; background: var(--bg); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; box-shadow: 0 0 0 3px var(--card), 0 0 0 4.5px var(--line); }
+.crop-stage:active { cursor: grabbing; }
+.crop-stage canvas { width: 100%; height: 100%; display: block; pointer-events: none; }
+.crop-zoom { display: flex; align-items: center; gap: 12px; margin: 22px 4px 0; color: var(--muted); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.crop-zoom input { flex: 1; min-width: 0; accent-color: var(--ink); }
+.crop-hint { text-align: center; color: var(--muted); font-size: 14px; margin: 14px 0 0; }
+.crop-btns { display: flex; gap: 10px; margin-top: 18px; }
+.crop-btns button { flex: 1; padding: 14px; border-radius: 999px; background: var(--bg); font-size: 16px; }
+.crop-btns .yes { background: var(--ink); color: var(--card); }
 .sheet .close { margin-top: 18px; width: 100%; padding: 14px; border-radius: 999px; background: var(--bg); font-size: 16px; flex: 0 0 auto; }
 .tune { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 10px); transform: translateX(-50%); z-index: 45; width: min(420px, calc(100% - 24px)); box-sizing: border-box; background: var(--card); color: var(--ink); border-radius: 26px; padding: 18px 20px 16px; box-shadow: 0 14px 40px var(--shadow); }
 .tune h3 { margin: 0 0 6px; font-weight: 400; font-size: 20px; }
@@ -859,8 +870,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   .dock .dot { fill: currentColor; stroke: none; }
   .dock button::before { content: ""; position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; background: var(--card); box-shadow: 0 8px 20px var(--shadow); opacity: 0; transform: translateY(0) scale(.6); transition: transform .45s var(--ease), opacity .3s ease; z-index: -1; }
   .dock button.on { color: var(--ink); }
-  .dock button.on::before { opacity: 1; transform: translateY(-20px) scale(1); }
-  .dock button.on svg { transform: translateY(-20px); }
+  .dock button.on::before { opacity: 1; transform: translateY(-9px) scale(1); }
+  .dock button.on svg { transform: translateY(-9px); }
   .hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 112px) !important; }
   .month-foot { bottom: calc(env(safe-area-inset-bottom, 0px) + 88px); }
   #app.in ~ .toast, .toast { top: calc(env(safe-area-inset-top, 0px) + 64px); }
@@ -926,8 +937,10 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 <div id="bgLayer" aria-hidden="true"><video id="bgVid" muted loop playsinline preload="auto"></video></div>
 
 <div id="splash" aria-label="Slate">
-  <svg class="ld-ring" id="ldRing" viewBox="-50 -30 100 60" aria-hidden="true"></svg>
-  <div class="ld-count" role="status"><div class="ld-pct" id="ldPct">0 %</div><div class="ld-word">loading...</div></div>
+  <div class="ld-group">
+    <svg class="ld-ring" id="ldRing" viewBox="-50 -30 100 60" aria-hidden="true"></svg>
+    <div class="ld-count" role="status"><div class="ld-pct" id="ldPct">0 %</div><div class="ld-word">loading...</div></div>
+  </div>
   <div class="splash-center">
     <div class="splash-auth" id="splashAuth" hidden>
       <p>Sign in to keep your Slate safe and on all your devices.</p>
@@ -1246,6 +1259,15 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <button type="button" class="close" id="slotClose">Close</button>
   </div>
 </div>
+<div class="sheet-wrap" id="cropSheet">
+  <div class="sheet crop-sheet">
+    <h2>Crop your photo</h2>
+    <div class="crop-stage" id="cropStage"><canvas id="cropCv" width="600" height="600"></canvas></div>
+    <p class="crop-hint">Drag to move. Pinch or slide to zoom.</p>
+    <label class="crop-zoom"><span>Zoom</span><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom"></label>
+    <div class="crop-btns"><button type="button" id="cropCancel">Cancel</button><button type="button" class="yes" id="cropSave">Use photo</button></div>
+  </div>
+</div>
 <div class="sheet-wrap" id="confirmSheet">
   <div class="sheet">
     <h2>Did you finish this?</h2>
@@ -1359,6 +1381,9 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const c = localStorage.getItem("slate.cal"); if (CAL_VIEWS.includes(c)) calView = c;
     if (calView === "b") lastDayLayout = "b";
     const v = localStorage.getItem("slate.view"); view = v === "home" || v === "kids" || v === "next" ? v : calView;
+    // A fresh open lands on Home; a reload inside the same visit (sign in / out) keeps the page you were on
+    let again = false; try { again = sessionStorage.getItem("slate.quick") === "1"; } catch (e) {}
+    if (!again) view = "home";
   } catch (e) {}
   const applyViewClasses = () => {
     app.classList.toggle("b", view === "b");
@@ -2977,21 +3002,69 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     watchFade(wrap);
   }
 
-  // Profile picture: cropped to a small square and kept on this device
-  $("avatarInput").addEventListener("change", e => {
-    const file = e.target.files && e.target.files[0]; if (!file) return;
-    const url = URL.createObjectURL(file), img = new Image();
-    img.onload = () => {
-      const S = 240, cv = document.createElement("canvas"); cv.width = cv.height = S;
-      const s = Math.min(img.width, img.height);
-      cv.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, S, S);
-      avatar = cv.toDataURL("image/jpeg", .86);
-      try { localStorage.setItem("slate.avatar", avatar); } catch (err) {}
-      URL.revokeObjectURL(url);
-      const b = $("avatarBtn"); if (b) { b.innerHTML = `<img alt="" src="${avatar}">`; b.animate([{ transform: "scale(.9)" }, { transform: "none" }], { duration: 400, easing: EASE }); }
+  // Profile picture: pick a photo, then drag and zoom it inside a round crop before it is saved (kept on this device)
+  (function avatarCrop() {
+    const sheet = $("cropSheet"), stage = $("cropStage"), cv = $("cropCv"), zoom = $("cropZoom"), ctx = cv.getContext("2d"), C = cv.width;
+    let img = null, url = "", base = 1, k = 1, ox = 0, oy = 0; // base = scale that just covers the circle, k = extra zoom
+    const sc = () => base * k;
+    const clamp = () => {
+      const w = img.width * sc(), h = img.height * sc();
+      ox = Math.min(0, Math.max(C - w, ox)); oy = Math.min(0, Math.max(C - h, oy));
     };
-    img.src = url; e.target.value = "";
-  });
+    const draw = () => {
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, C, C);
+      ctx.drawImage(img, ox, oy, img.width * sc(), img.height * sc());
+    };
+    // zoom around a point of the circle (default its middle) so the picture stays where you are looking
+    const setZoom = (nk, cx = C / 2, cy = C / 2) => {
+      nk = Math.min(4, Math.max(1, nk)); const f = nk / k;
+      ox = cx - (cx - ox) * f; oy = cy - (cy - oy) * f; k = nk; zoom.value = k; clamp(); draw();
+    };
+    const close = () => { sheet.classList.remove("open"); if (url) URL.revokeObjectURL(url); url = ""; img = null; };
+    const open = file => {
+      const u = URL.createObjectURL(file), im = new Image();
+      im.onload = () => {
+        url = u; img = im; base = C / Math.min(im.width, im.height); k = 1; zoom.value = 1;
+        ox = (C - im.width * base) / 2; oy = (C - im.height * base) / 2; clamp(); draw();
+        sheet.classList.add("open");
+      };
+      im.onerror = () => URL.revokeObjectURL(u);
+      im.src = u;
+    };
+    // drag with one finger, pinch with two (pointer events work for mouse, touch and pen)
+    const ptrs = new Map(); let lastD = 0;
+    const local = e => { const r = stage.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * C, (e.clientY - r.top) / r.height * C]; };
+    stage.addEventListener("pointerdown", e => { if (!img) return; stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, local(e)); lastD = 0; });
+    stage.addEventListener("pointermove", e => {
+      if (!img || !ptrs.has(e.pointerId)) return;
+      const prev = ptrs.get(e.pointerId), cur = local(e); ptrs.set(e.pointerId, cur);
+      if (ptrs.size === 1) { ox += cur[0] - prev[0]; oy += cur[1] - prev[1]; clamp(); draw(); }
+      else if (ptrs.size === 2) {
+        const [p, q] = [...ptrs.values()], d = Math.hypot(p[0] - q[0], p[1] - q[1]);
+        if (lastD) setZoom(k * d / lastD, (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+        lastD = d;
+      }
+    });
+    const up = e => { ptrs.delete(e.pointerId); lastD = 0; };
+    stage.addEventListener("pointerup", up); stage.addEventListener("pointercancel", up);
+    stage.addEventListener("wheel", e => { if (!img) return; e.preventDefault(); const [x, y] = local(e); setZoom(k * Math.exp(-e.deltaY / 300), x, y); }, { passive: false });
+    zoom.addEventListener("input", () => { if (img) setZoom(parseFloat(zoom.value)); });
+    $("cropCancel").addEventListener("click", close);
+    sheet.addEventListener("click", e => { if (e.target === sheet) close(); });
+    $("cropSave").addEventListener("click", () => {
+      if (!img) return;
+      const S = 240, out = document.createElement("canvas"); out.width = out.height = S;
+      out.getContext("2d").drawImage(cv, 0, 0, C, C, 0, 0, S, S);
+      avatar = out.toDataURL("image/jpeg", .86);
+      try { localStorage.setItem("slate.avatar", avatar); } catch (err) {}
+      close();
+      const b = $("avatarBtn"); if (b) { b.innerHTML = `<img alt="" src="${avatar}">`; b.animate([{ transform: "scale(.9)" }, { transform: "none" }], { duration: 400, easing: EASE }); }
+    });
+    $("avatarInput").addEventListener("change", e => {
+      const file = e.target.files && e.target.files[0]; e.target.value = "";
+      if (file) open(file);
+    });
+  })();
 
   // Daily check-in: asked on each open until it's answered for the day
   function askFeeling() {
@@ -4850,7 +4923,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   const markIntro = () => { try { localStorage.setItem("slate.intro", "1"); } catch (e) {} };
   $("introLater").addEventListener("click", () => { markIntro(); finishBoot(false); });
   $("introSignIn").addEventListener("click", () => { markIntro(); finishBoot(true); setTimeout(openAccount, 700); });
-  if (showIntro) setTimeout(() => { $("splashAuth").hidden = false; }, 2300);
+  if (showIntro) setTimeout(() => { $("splashAuth").hidden = false; $("splash").classList.add("authing"); }, 2300);
   else setTimeout(() => finishBoot(false), quickBoot ? 0 : 2300);
   function finishBoot(signingIn) {
     if (!$("splash") || $("splash").classList.contains("out")) return;
