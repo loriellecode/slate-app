@@ -1,0 +1,8 @@
+{
+  "name": "slate",
+  "productName": "Slate",
+  "version": "1.0.0",
+  "description": "Slate for Mac: a window around the Slate web app",
+  "main": "main.js",
+  "private": true
+}
