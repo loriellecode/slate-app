@@ -7,6 +7,9 @@ A calm, minimal planner for iPad: a Home dashboard, three calendar layouts (big 
 ## Install on iPad
 Open the live app in Safari, tap Share, then **Add to Home Screen**. Use Slate from that icon: it opens full screen, works offline, and the iPad keeps its data.
 
+## Work from Workspace
+If you also use the Workspace app, connect Slate there (Settings → Connections → Slate, with your Slate username and password). Your Workspace calendar events then show on Slate's calendar with a **Work** tag, tasks you send appear on the **Work Tasks** page (from the Home card), and ticking one off here ticks it off in Workspace. It needs the `work_items` table: run `supabase/work_items.sql` once in the Slate Supabase project's SQL editor.
+
 ## Your data
 Everything is saved on the device, in the browser's storage for this site. There's no account yet.
 - Updates to the app never erase it. Each update only replaces the app's code.

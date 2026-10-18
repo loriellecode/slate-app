@@ -734,7 +734,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   grid-area: home; display: grid; min-height: 0; overflow-y: auto; scrollbar-width: none; touch-action: pan-y;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: auto auto minmax(250px, 1fr) minmax(250px, 1fr);
-  grid-template-areas: "hello hello clock" "ai ai ai" "progress feel feel" "ideas ideas attn";
+  grid-template-areas: "hello hello clock" "ai ai ai" "progress work feel" "ideas ideas attn";
   gap: 16px;
 }
 .home-pane::-webkit-scrollbar { display: none; }
@@ -800,6 +800,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .clock .t { font-size: clamp(44px, 6vw, 84px); font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1; white-space: nowrap; }
 .clock .ap { font-size: .3em; letter-spacing: .1em; margin-left: 6px; color: var(--muted); }
 .progress { grid-area: progress; }
+.h-card.work { grid-area: work; }
 .ring { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; margin-block: 8px; }
 .ring svg { width: auto; height: 100%; max-width: 100%; max-height: 200px; transform: rotate(-90deg); }
 .ring circle { fill: none; stroke-width: 13; }
@@ -880,6 +881,30 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 }
 .ip-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; position: sticky; top: 0; z-index: 2; flex: 0 0 auto; background: var(--bg); padding: calc(env(safe-area-inset-top, 0px) + 22px) 0 12px; }
 .ideas-page > * { flex: 0 0 auto; }
+/* ---- Work from the Workspace app: the Work Tasks page, its Home card, and work rows on the calendar ---- */
+.wk-refresh { margin-left: auto; border: 0; background: none; color: inherit; font: inherit; font-size: 15px; opacity: .7; padding: 8px 4px; cursor: pointer; }
+.work-note { margin: 4px 0 14px; font-size: 14px; opacity: .65; }
+.work-list { display: flex; flex-direction: column; gap: 22px; padding-bottom: 24px; }
+.work-group h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .6; }
+.work-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 4px; border-bottom: 1px solid rgba(127,127,127,.18); }
+.work-item .wi-body { flex: 1; min-width: 0; }
+.work-item .wi-title { font-size: 17px; overflow-wrap: anywhere; }
+.work-item.done .wi-title { text-decoration: line-through; opacity: .5; }
+.work-item .wi-meta { font-size: 13px; opacity: .6; margin-top: 3px; }
+.work-item .wi-notes { font-size: 14px; opacity: .75; margin-top: 4px; white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.work-item .wi-pri { font-weight: 600; }
+.wi-check { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid currentColor; background: none; color: inherit; opacity: .55; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.wi-check svg { width: 16px; height: 16px; opacity: 0; }
+.work-item.done .wi-check { background: #34c759; border-color: #34c759; color: #fff; opacity: 1; }
+.work-item.done .wi-check svg { opacity: 1; }
+.work-empty { opacity: .6; font-size: 15px; padding: 8px 0; }
+.h-card.work .w-open { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 4px; }
+.h-card.work .w-open b { font-size: 34px; font-weight: 600; }
+.h-card.work .w-next { font-size: 14px; opacity: .7; }
+.h-card.work button.w-go { margin-top: 10px; border: 0; background: rgba(127,127,127,.14); color: inherit; font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.row.work .tw .w-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-size: clamp(17px, 1.9vw, 24px); }
+.row.work.done .tw .w-text { color: var(--muted); text-decoration: line-through; }
+.row.work .w-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #4f7cff; color: #fff; vertical-align: middle; }
 .ip-head .back { margin: 0; }
 .ip-head h2 { font-weight: 400; font-size: clamp(40px, 6vw, 80px); margin: 0; line-height: 1; letter-spacing: -.01em; }
 .ip-count { color: var(--muted); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; margin-left: auto; }
@@ -900,7 +925,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .ip-grid .board-empty { grid-column: 1 / -1; }
 
 @media (max-width: 760px), (orientation: portrait) and (max-width: 900px) {
-  #app.home .home-pane { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: max-content; align-content: start; grid-template-areas: "hello" "clock" "ai" "progress" "feel" "ideas" "attn"; }
+  #app.home .home-pane { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: max-content; align-content: start; grid-template-areas: "hello" "clock" "ai" "work" "progress" "feel" "ideas" "attn"; }
   .clock { align-items: flex-start; }
   .h-card { min-height: max-content; }
   .ed-links { gap: 12px; }
@@ -1223,6 +1248,16 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   <div class="r-search ip-search" id="ideasSearch"><div><input id="ideasSearchInput" type="search" placeholder="Search ideas" aria-label="Search ideas"></div></div>
   <div class="idea-add ip-add"><input id="ideaInput2" type="text" placeholder="Jot down an idea…" aria-label="New idea" enterkeyhint="done"><button type="button" id="ideaAdd2">Pin it</button></div>
   <div class="ip-grid" id="ideasGrid"></div>
+</div>
+<div class="ideas-page" id="workPage" aria-hidden="true">
+  <div class="ip-head">
+    <button type="button" class="back" id="workBack">‹ Home</button>
+    <h2>Work Tasks</h2>
+    <span class="ip-count" id="workCount"></span>
+    <button type="button" class="wk-refresh" id="workRefresh">Refresh</button>
+  </div>
+  <p class="work-note" id="workNote"></p>
+  <div class="work-list" id="workList"></div>
 </div>
 <div class="side-panel" id="accPage" aria-hidden="true" role="dialog" aria-label="Accents">
   <div class="acc-head">
@@ -1555,8 +1590,18 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     wrap.className = "list";
     wrap.dataset.key = keyOf(d);
     const tasks = normalize(tasksFor(d));
-    const n = Math.max(MIN_ROWS, tasks.length + 1);
-    for (let i = 0; i < n; i++) wrap.appendChild(buildRow(d, tasks[i]));
+    // Work from Workspace sits among your own open tasks by time; untimed work follows them, before anything done
+    const work = workOn(keyOf(d)).sort((a, b) => a.done - b.done || (a.t || "99").localeCompare(b.t || "99"));
+    let wi = 0;
+    const flush = until => { while (wi < work.length && (until == null || (work[wi].t && !work[wi].done && work[wi].t <= until))) wrap.appendChild(buildWorkRow(work[wi++])); };
+    const n = Math.max(MIN_ROWS - work.length, tasks.length + 1);
+    for (let i = 0; i < n; i++) {
+      const task = tasks[i];
+      if (task && !task.done && task.t) flush(task.t);
+      if (!task || task.done) flush(null);
+      wrap.appendChild(buildRow(d, task));
+    }
+    flush(null);
     fixPlaceholders(wrap);
     watchFade(wrap);
     return wrap;
@@ -2133,7 +2178,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const max = Math.max(1, Math.min(8, Math.floor((cellH - 60) / (innerWidth <= 560 ? 22 : 31))));
     for (let i = 0; i < weeks * 7; i++) {
       const day = addDays(start, i), key = keyOf(day);
-      const tasks = [...(store[key] || [])].sort((a, b) => a.done - b.done || (a.t || "99").localeCompare(b.t || "99"));
+      const tasks = [...(store[key] || []), ...workOn(key)].sort((a, b) => a.done - b.done || (a.t || "99").localeCompare(b.t || "99"));
       const cell = document.createElement("button"); cell.type = "button";
       cell.className = "m-cell" + (+day === +today ? " today" : "") + (day < today ? " past" : "");
       cell.dataset.key = key;
@@ -2167,7 +2212,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     grid.style.setProperty("--weeks", weeks);
     for (let i = 0; i < weeks * 7; i++) {
       const day = addDays(start, i), key = keyOf(day);
-      const tasks = [...(store[key] || [])].sort((a, b) => a.done - b.done);
+      const tasks = [...(store[key] || []), ...workOn(key)].sort((a, b) => a.done - b.done);
       const cell = document.createElement("button"); cell.type = "button";
       cell.className = "m-cell" + (day.getMonth() !== d.getMonth() ? " out" : "") + (+day === +today ? " today" : "") + (day < today ? " past" : "");
       cell.dataset.key = key;
@@ -2905,6 +2950,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       </div>
       <div class="clock"><div class="t" id="hClock" data-v="${c.t + c.ap}">${c.t}<span class="ap">${c.ap}</span></div></div>
       <button type="button" class="h-ai" id="aiOpen"><span class="spark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></span><span class="t"><b>Plan with AI</b><small>Paste a list or tell me what you need. I'll put it on your calendar, in your queue, or both.</small></span><span class="go">›</span></button>
+      <div class="h-card work" id="hWork"></div>
       <div class="h-card progress" id="hProgress"></div>
       <div class="h-card feel" id="hFeel"></div>
       <div class="h-card ideas">
@@ -2915,7 +2961,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       <div class="h-card attn" id="hAttn"></div>`;
     $("hGreet").textContent = greeting();
     $("avatarBtn").addEventListener("click", () => $("avatarInput").click());
-    renderProgress(); renderFeel(); renderBoard(); renderAttention();
+    renderProgress(); renderFeel(); renderBoard(); renderAttention(); renderWorkCard();
     const inp = $("ideaInput");
     const add = () => { if (addIdea(inp.value)) inp.value = ""; inp.focus(); };
     $("ideaAdd").addEventListener("click", add);
@@ -4643,6 +4689,145 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     if (!r.ok) throw { status: r.status, msg: (j && (j.message || j.msg)) || "Request failed" };
     return j;
   }
+  // ---------- Work from the Workspace app (public.work_items, see supabase/work_items.sql) ----------
+  // Workspace sends tasks and events into this account; Slate shows them under Work and sends completion back.
+  // They live in a device-only cache (slate.work), never in slate.v1, so Slate's own sync and backups are untouched.
+  var WORK = null;
+  function workData() {
+    if (!WORK) { try { WORK = JSON.parse(localStorage.getItem("slate.work") || "null"); } catch (e) { WORK = null; } }
+    if (!WORK || typeof WORK !== "object" || !WORK.items) WORK = { items: {}, cursor: "", user_id: "" };
+    return WORK;
+  }
+  function saveWork() { try { localStorage.setItem("slate.work", JSON.stringify(workData())); } catch (e) {} }
+  const WORK_CAT = { id: "work", name: "Work", color: "#4f7cff" };
+  function ensureWorkCategory() {
+    if (!Array.isArray(store.__categories) || store.__categories.some(c => c.id === WORK_CAT.id)) return;
+    store.__categories.push(Object.assign({}, WORK_CAT)); save();
+  }
+  // Work items on one day, shaped like Slate tasks (read-only) so the calendar can draw them
+  function workOn(key) {
+    const W = workData(); if (!session || W.user_id !== (session && session.user_id)) return [];
+    return Object.values(W.items).filter(w => !w.deleted && w.due_date === key)
+      .map(w => ({ t: w.start_time || "", text: w.title, done: !!w.done, cat: WORK_CAT.id, __wid: w.wid }));
+  }
+  function buildWorkRow(w) {
+    const row = document.createElement("div");
+    row.className = "row work" + (w.done ? " done" : "");
+    row.innerHTML = `<label class="time"><span></span></label><span class="tw"><span class="w-text"></span></span><span class="grip" aria-hidden="true"></span><button class="check" type="button" aria-label="${w.done ? "Mark not done" : "Mark done"}">${CHECK}</button>`;
+    row.querySelector(".time span").textContent = w.t ? fmtTime(w.t) : "";
+    const tx = row.querySelector(".w-text"); tx.textContent = w.text;
+    const tag = document.createElement("span"); tag.className = "w-tag"; tag.textContent = "Work"; tx.appendChild(tag);
+    row.querySelector(".check").addEventListener("click", () => toggleWork(w.__wid));
+    return row;
+  }
+  async function workFetch(query) {
+    const token = await getToken(); if (!token) throw { msg: "signed out" };
+    const r = await fetch(SB_URL + "/rest/v1/work_items" + query, { headers: { apikey: SB_KEY, Authorization: "Bearer " + token } });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); throw { status: r.status, msg: j.message || "Couldn't load work" }; }
+    return r.json();
+  }
+  let workBusy = false, workMsg = "";
+  // Fetch what changed since last time (everything, the first time or after switching accounts)
+  async function pullWork(manual) {
+    if (!CAN_SYNC || !session || workBusy) return;
+    workBusy = true;
+    try {
+      const W = workData();
+      if (W.user_id !== session.user_id) { W.items = {}; W.cursor = ""; W.user_id = session.user_id; }
+      const rows = await workFetch("?select=*&order=updated_at.asc&limit=1000" + (W.cursor ? "&updated_at=gt." + encodeURIComponent(W.cursor) : ""));
+      rows.forEach(r => { W.items[r.wid] = r; if (!W.cursor || r.updated_at > W.cursor) W.cursor = r.updated_at; });
+      saveWork();
+      workMsg = "";
+      if (Object.values(W.items).some(w => !w.deleted)) ensureWorkCategory();
+      if (rows.length) refreshWorkViews();
+      else if (manual) showToast({ text: "Work is up to date." });
+    } catch (e) {
+      workMsg = e && e.status === 404 ? "Work isn't set up on this account yet." : "Couldn't load work: " + friendly(e);
+      if (manual) showToast({ text: workMsg });
+    } finally { workBusy = false; renderWorkPage(); }
+  }
+  async function toggleWork(wid) {
+    const w = workData().items[wid]; if (!w) return;
+    if (!session) { showToast({ text: "Sign in to tick off work.", action: "Sign in", go: openAccount }); return; }
+    const done = !w.done, at = new Date().toISOString();
+    Object.assign(w, { done, done_changed_at: at, done_by: "slate" }); saveWork(); refreshWorkViews();
+    try {
+      const ok = await rpc("set_work_done", { p_wid: wid, p_done: done, p_at: at }, true);
+      if (!ok) pullWork(false); // Workspace changed it more recently: take theirs
+    } catch (e) { showToast({ text: "Couldn't save that to Workspace yet. It will try again when you're online." }); }
+  }
+  function refreshWorkViews() {
+    renderWorkPage(); renderWorkCard();
+    try {
+      // never redraw under something you're typing into the day list
+      const typing = document.activeElement && listPane.contains(document.activeElement) && document.activeElement.value;
+      if (view === "month") refreshMonth(); else if (!["home", "kids", "next", "week"].includes(view) && !typing) refreshList();
+    } catch (e) {}
+  }
+  const PRI_WORD = { high: "High priority", medium: "Medium priority", low: "Low priority" };
+  function workDue(w) {
+    if (!w.due_date) return "";
+    const d = dateOf(w.due_date), k = w.due_date, t = keyOf(today);
+    const day = k === t ? "Today" : k === keyOf(addDays(today, 1)) ? "Tomorrow" : `${cap(MON3(d))} ${d.getDate()}`;
+    return (k < t && !w.done ? "Overdue · " : "") + day + (w.start_time ? " · " + fmtTime(w.start_time) : "");
+  }
+  function workItemEl(w) {
+    const el = document.createElement("div"); el.className = "work-item" + (w.done ? " done" : "");
+    el.innerHTML = `<button class="wi-check" type="button" aria-label="${w.done ? "Mark not done" : "Mark done"}: ${esc(w.title)}">${CHECK}</button><div class="wi-body"><div class="wi-title"></div><div class="wi-meta"></div><div class="wi-notes"></div></div>`;
+    el.querySelector(".wi-title").textContent = w.title;
+    const meta = [workDue(w), w.priority ? PRI_WORD[w.priority] : ""].filter(Boolean).join(" · ");
+    el.querySelector(".wi-meta").textContent = meta; if (!meta) el.querySelector(".wi-meta").remove();
+    if (w.notes) el.querySelector(".wi-notes").textContent = w.notes; else el.querySelector(".wi-notes").remove();
+    el.querySelector(".wi-check").addEventListener("click", () => toggleWork(w.wid));
+    return el;
+  }
+  function workTasks() {
+    return Object.values(workData().items).filter(w => w.kind === "task" && !w.deleted)
+      .sort((a, b) => a.done - b.done || (a.due_date || "9999").localeCompare(b.due_date || "9999") || a.title.localeCompare(b.title));
+  }
+  function renderWorkPage() {
+    const list = $("workList"); if (!list) return;
+    list.replaceChildren();
+    const note = $("workNote");
+    if (!CAN_SYNC || !session) { note.textContent = "Sign in to your Slate account to see the work you send from Workspace."; $("workCount").textContent = ""; return; }
+    note.textContent = workMsg || "Sent from Workspace. Tick a task here and it's ticked there too.";
+    const all = workTasks(), open = all.filter(w => !w.done);
+    $("workCount").textContent = open.length + " to do";
+    if (!all.length) { const e = document.createElement("div"); e.className = "work-empty"; e.textContent = "Nothing yet. In Workspace, choose tasks and press Send to Slate."; list.appendChild(e); return; }
+    const groups = new Map();
+    open.forEach(w => { const g = w.project || "No project"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(w); });
+    groups.forEach((items, name) => {
+      const g = document.createElement("section"); g.className = "work-group";
+      const h = document.createElement("h3"); h.textContent = name; g.appendChild(h);
+      items.forEach(w => g.appendChild(workItemEl(w)));
+      list.appendChild(g);
+    });
+    const done = all.filter(w => w.done);
+    if (done.length) {
+      const g = document.createElement("section"); g.className = "work-group";
+      const h = document.createElement("h3"); h.textContent = `Done (${done.length})`; g.appendChild(h);
+      done.slice(0, 30).forEach(w => g.appendChild(workItemEl(w)));
+      list.appendChild(g);
+    }
+  }
+  function renderWorkCard() {
+    const el = $("hWork"); if (!el) return;
+    const open = session ? workTasks().filter(w => !w.done) : [];
+    const next = open.find(w => w.due_date);
+    el.innerHTML = `<div class="h-label"><span>Work Tasks</span><button class="link" type="button" id="workMore">View all ›</button></div>
+      <div class="w-open"><b>${open.length}</b><span>${open.length === 1 ? "task" : "tasks"} from Workspace</span></div>
+      <div class="w-next"></div>`;
+    el.querySelector(".w-next").textContent = !session ? "Sign in to see work sent from Workspace." : next ? `Next: ${next.title} · ${workDue(next)}` : open.length ? "" : "All clear.";
+    $("workMore").addEventListener("click", openWork);
+  }
+  function openWork() { $("workPage").scrollTop = 0; renderWorkPage(); $("workPage").classList.add("open"); $("workPage").setAttribute("aria-hidden", "false"); pullWork(false); }
+  $("workBack").addEventListener("click", () => { $("workPage").classList.remove("open"); $("workPage").setAttribute("aria-hidden", "true"); renderWorkCard(); });
+  $("workRefresh").addEventListener("click", () => pullWork(true));
+  $("workPage").addEventListener("scroll", () => $("workPage").classList.toggle("scrolled", $("workPage").scrollTop > 6), { passive: true });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && session) pullWork(false); });
+  setInterval(() => { if (document.visibilityState === "visible" && session) pullWork(false); }, 60000);
+  setTimeout(() => { if (session) pullWork(false); }, 1500);
+
   const saveAnswers = a => rpc("set_recovery_answers", { p_kind: a.kind, p_name: a.name, p_birthday: a.birthday, p_extra: a.extra }, true);
   // After 3 days with an account, Slate asks for the questions each time it opens until they're saved
   async function refreshRecStatus() {
