@@ -855,7 +855,7 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
   header { display: flex; align-items: center; gap: 8px; }
   header .icons { display: contents; }
   header .label { display: none; }
-  #settingsBtn { order: 1; } #kidsBtn { order: 2; } #weekBtn { order: 3; display: grid; } #statsBtn { order: 4; }
+  #settingsBtn { order: 1; } #workBtn { order: 1; } #kidsBtn { order: 2; } #weekBtn { order: 3; display: grid; } #statsBtn { order: 4; }
   #homeBtn, #nextBtn, #layoutBtn { display: none; }
   #addBtn { order: 9; margin-left: auto; }
   .icon-btn { width: 42px; height: 42px; }
@@ -902,9 +902,46 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 .h-card.work .w-open b { font-size: 34px; font-weight: 600; }
 .h-card.work .w-next { font-size: 14px; opacity: .7; }
 .h-card.work button.w-go { margin-top: 10px; border: 0; background: rgba(127,127,127,.14); color: inherit; font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
-.row.work .tw .w-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-size: clamp(17px, 1.9vw, 24px); }
-.row.work.done .tw .w-text { color: var(--muted); text-decoration: line-through; }
-.row.work .w-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #4f7cff; color: #fff; vertical-align: middle; }
+.work-tabs { margin: 2px 0 14px; }
+.work-goals { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.work-goals:empty { display: none; }
+.work-goals button { padding: 8px 14px; border-radius: 999px; background: var(--card); color: var(--muted); font-size: 14px; }
+.work-goals button[aria-selected="true"] { background: var(--ink); color: var(--on-ink); }
+.wq-goal { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.wq-title { font-size: clamp(26px, 3.4vw, 40px); margin: 2px 0 6px; font-weight: 500; overflow-wrap: anywhere; }
+.wq-bar { height: 8px; border-radius: 999px; background: var(--card); overflow: hidden; margin: 8px 0 4px; }
+.wq-bar i { display: block; height: 100%; background: #34c759; border-radius: inherit; transition: width .5s ease; }
+.wq-count { font-size: 14px; color: var(--muted); }
+.wq-now { background: var(--card); border-radius: 30px; padding: 22px 24px; display: flex; flex-direction: column; gap: 6px; }
+.wq-now .lbl { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.wq-now .t { font-size: clamp(20px, 2.4vw, 28px); overflow-wrap: anywhere; }
+.wq-now .sec { font-size: 14px; color: var(--muted); }
+.wq-now .n { font-size: 15px; opacity: .8; white-space: pre-line; }
+.wq-now button.done-btn { align-self: flex-start; margin-top: 10px; padding: 12px 22px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font-size: 16px; }
+.wq-complete { display: flex; align-items: center; gap: 14px; background: var(--card); border-radius: 30px; padding: 20px 24px; font-size: 18px; }
+.wq-complete .ok { flex: none; width: 40px; height: 40px; border-radius: 50%; background: #34c759; display: grid; place-items: center; }
+.wq-complete .ok svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.wo-sec { display: flex; flex-direction: column; gap: 2px; }
+.wo-sec h3 { margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+.wo-sec h3 span { color: var(--muted); font-weight: 400; margin-right: 6px; }
+.wo-step { display: grid; grid-template-columns: 34px 30px minmax(0, 1fr); align-items: start; gap: 10px; padding: 10px 4px; border-bottom: 1px solid rgba(127,127,127,.16); }
+.wo-step .num { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; padding-top: 5px; text-align: right; }
+.wo-step .tt { font-size: 16px; padding-top: 3px; overflow-wrap: anywhere; }
+.wo-step.done .tt { text-decoration: line-through; color: var(--muted); }
+.wo-step.done .wi-check { background: #34c759; border-color: #34c759; color: #fff; opacity: 1; }
+.wo-step.done .wi-check svg { opacity: 1; }
+.wcal-btn { display: none; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; white-space: nowrap; }
+#app.month .wcal-btn#workCalBtn { display: inline-flex; }
+#app.month.wcal-on .wcal-btn#workAddBtn { display: inline-flex; }
+.wcal-sw { width: 30px; height: 18px; border-radius: 999px; background: rgba(127,127,127,.35); position: relative; transition: background .25s ease; }
+.wcal-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .25s ease; }
+#workCalBtn[aria-pressed="true"] .wcal-sw { background: #4f7cff; }
+#workCalBtn[aria-pressed="true"] .wcal-sw::after { transform: translateX(12px); }
+.m-chip.work .cd { background: #4f7cff; }
+.wev-fields { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+.wev-fields label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.wev-fields input { border: 0; border-radius: 16px; background: var(--bg); color: var(--ink); font: inherit; font-size: 17px; padding: 12px 14px; outline: none; }
+.wev-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ip-head .back { margin: 0; }
 .ip-head h2 { font-weight: 400; font-size: clamp(40px, 6vw, 80px); margin: 0; line-height: 1; letter-spacing: -.01em; }
 .ip-count { color: var(--muted); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; margin-left: auto; }
@@ -985,12 +1022,17 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       <button class="icon-btn" id="homeBtn" aria-label="Home" aria-pressed="false">
         <svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5"/><path d="M6 9v10.5h4.5v-5.5h3v5.5H18V9"/></svg>
       </button>
+      <button class="icon-btn" id="workBtn" aria-label="Work" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5M3.5 13h17"/><path d="M10.5 13v1.5h3V13"/></svg>
+      </button>
       <button class="icon-btn" id="nextBtn" aria-label="Next: your day as a queue" aria-pressed="false">
         <svg viewBox="0 0 24 24"><path d="M4.5 7h8M4.5 12h8M4.5 17h5"/><path d="M15.5 8.2l4.6 3.8-4.6 3.8z"/></svg>
       </button>
     </div>
     <div class="label" id="label"></div>
     <div class="icons right">
+      <button type="button" class="wcal-btn" id="workCalBtn" aria-pressed="true"><span class="wcal-sw" aria-hidden="true"></span>Show Work Schedule</button>
+      <button type="button" class="wcal-btn" id="workAddBtn">+ Work event</button>
       <button class="icon-btn" id="addBtn" aria-label="Add a task">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
       </button>
@@ -1202,6 +1244,22 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     <button class="close" id="userLater" data-close>Cancel</button>
   </div>
 </div>
+<div class="sheet-wrap" id="workEventSheet">
+  <div class="sheet">
+    <h2>New work event</h2>
+    <p class="feel-hint">It goes on your Work calendar here and on the calendar in Workspace.</p>
+    <div class="wev-fields">
+      <label>What<input id="wevTitle" type="text" maxlength="200" placeholder="Client call" enterkeyhint="done"></label>
+      <label>Day<input id="wevDate" type="date"></label>
+      <div class="wev-times"><label>Starts<input id="wevStart" type="time"></label><label>Ends<input id="wevEnd" type="time"></label></div>
+    </div>
+    <p class="feel-hint" id="wevMsg" aria-live="polite"></p>
+    <div class="confirm-btns">
+      <button type="button" data-close>Cancel</button>
+      <button type="button" class="ink" id="wevSave">Add to Work</button>
+    </div>
+  </div>
+</div>
 <div class="sheet-wrap" id="histSheet">
   <div class="sheet">
     <h2 id="histTitle">Chore history</h2>
@@ -1252,10 +1310,12 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
 <div class="ideas-page" id="workPage" aria-hidden="true">
   <div class="ip-head">
     <button type="button" class="back" id="workBack">‹ Home</button>
-    <h2>Work Tasks</h2>
+    <h2>Work</h2>
     <span class="ip-count" id="workCount"></span>
     <button type="button" class="wk-refresh" id="workRefresh">Refresh</button>
   </div>
+  <div class="work-tabs"><div class="seg" id="workTabs" role="tablist" aria-label="Work layout"><button type="button" role="tab" data-tab="queue" aria-selected="true">Queue</button><button type="button" role="tab" data-tab="outline" aria-selected="false">Outline</button></div></div>
+  <div class="work-goals" id="workGoals" role="tablist" aria-label="Goals from Workspace"></div>
   <p class="work-note" id="workNote"></p>
   <div class="work-list" id="workList"></div>
 </div>
@@ -1590,18 +1650,8 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     wrap.className = "list";
     wrap.dataset.key = keyOf(d);
     const tasks = normalize(tasksFor(d));
-    // Work from Workspace sits among your own open tasks by time; untimed work follows them, before anything done
-    const work = workOn(keyOf(d)).sort((a, b) => a.done - b.done || (a.t || "99").localeCompare(b.t || "99"));
-    let wi = 0;
-    const flush = until => { while (wi < work.length && (until == null || (work[wi].t && !work[wi].done && work[wi].t <= until))) wrap.appendChild(buildWorkRow(work[wi++])); };
-    const n = Math.max(MIN_ROWS - work.length, tasks.length + 1);
-    for (let i = 0; i < n; i++) {
-      const task = tasks[i];
-      if (task && !task.done && task.t) flush(task.t);
-      if (!task || task.done) flush(null);
-      wrap.appendChild(buildRow(d, task));
-    }
-    flush(null);
+    const n = Math.max(MIN_ROWS, tasks.length + 1);
+    for (let i = 0; i < n; i++) wrap.appendChild(buildRow(d, tasks[i]));
     fixPlaceholders(wrap);
     watchFade(wrap);
     return wrap;
@@ -4690,8 +4740,10 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     return j;
   }
   // ---------- Work from the Workspace app (public.work_items, see supabase/work_items.sql) ----------
-  // Workspace sends tasks and events into this account; Slate shows them under Work and sends completion back.
-  // They live in a device-only cache (slate.work), never in slate.v1, so Slate's own sync and backups are untouched.
+  // Workspace sends goals (with their steps in order), tasks and calendar events into this account; Slate shows
+  // them on the Work page (Queue and Outline) and, when Show Work Schedule is on, on the month calendar.
+  // Ticks go back to Workspace; a goal whose steps are all done is reported to Workspace as completed.
+  // Rows live in a device-only cache (slate.work), never in slate.v1, so Slate's own sync and backups are untouched.
   var WORK = null;
   function workData() {
     if (!WORK) { try { WORK = JSON.parse(localStorage.getItem("slate.work") || "null"); } catch (e) { WORK = null; } }
@@ -4704,21 +4756,19 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     if (!Array.isArray(store.__categories) || store.__categories.some(c => c.id === WORK_CAT.id)) return;
     store.__categories.push(Object.assign({}, WORK_CAT)); save();
   }
-  // Work items on one day, shaped like Slate tasks (read-only) so the calendar can draw them
-  function workOn(key) {
-    const W = workData(); if (!session || W.user_id !== (session && session.user_id)) return [];
-    return Object.values(W.items).filter(w => !w.deleted && w.due_date === key)
-      .map(w => ({ t: w.start_time || "", text: w.title, done: !!w.done, cat: WORK_CAT.id, __wid: w.wid }));
+  const workMine = () => { const W = workData(); return session && W.user_id === session.user_id ? Object.values(W.items).filter(w => !w.deleted) : []; };
+  // "Show Work Schedule" on the month calendar: device-only, on unless you turn it off
+  function workCalShown() { try { return localStorage.getItem("slate.workcal") !== "0"; } catch (e) { return true; } }
+  function syncWorkCalButton() {
+    const on = workCalShown();
+    $("workCalBtn").setAttribute("aria-pressed", String(on));
+    $("app").classList.toggle("wcal-on", on && !!session);
   }
-  function buildWorkRow(w) {
-    const row = document.createElement("div");
-    row.className = "row work" + (w.done ? " done" : "");
-    row.innerHTML = `<label class="time"><span></span></label><span class="tw"><span class="w-text"></span></span><span class="grip" aria-hidden="true"></span><button class="check" type="button" aria-label="${w.done ? "Mark not done" : "Mark done"}">${CHECK}</button>`;
-    row.querySelector(".time span").textContent = w.t ? fmtTime(w.t) : "";
-    const tx = row.querySelector(".w-text"); tx.textContent = w.text;
-    const tag = document.createElement("span"); tag.className = "w-tag"; tag.textContent = "Work"; tx.appendChild(tag);
-    row.querySelector(".check").addEventListener("click", () => toggleWork(w.__wid));
-    return row;
+  // Work on one day, shaped like Slate tasks (read-only) for the month calendar
+  function workOn(key) {
+    if (!workCalShown()) return [];
+    return workMine().filter(w => (w.kind === "event" || w.kind === "task") && w.due_date === key)
+      .map(w => ({ t: w.start_time || "", text: w.title, done: !!w.done, cat: WORK_CAT.id, __wid: w.wid }));
   }
   async function workFetch(query) {
     const token = await getToken(); if (!token) throw { msg: "signed out" };
@@ -4727,7 +4777,6 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     return r.json();
   }
   let workBusy = false, workMsg = "";
-  // Fetch what changed since last time (everything, the first time or after switching accounts)
   async function pullWork(manual) {
     if (!CAN_SYNC || !session || workBusy) return;
     workBusy = true;
@@ -4738,32 +4787,53 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
       rows.forEach(r => { W.items[r.wid] = r; if (!W.cursor || r.updated_at > W.cursor) W.cursor = r.updated_at; });
       saveWork();
       workMsg = "";
-      if (Object.values(W.items).some(w => !w.deleted)) ensureWorkCategory();
+      if (workMine().length) ensureWorkCategory();
       if (rows.length) refreshWorkViews();
       else if (manual) showToast({ text: "Work is up to date." });
     } catch (e) {
       workMsg = e && e.status === 404 ? "Work isn't set up on this account yet." : "Couldn't load work: " + friendly(e);
       if (manual) showToast({ text: workMsg });
-    } finally { workBusy = false; renderWorkPage(); }
+    } finally { workBusy = false; renderWorkPage(); syncWorkCalButton(); }
+  }
+  async function setWorkDone(wid, done) {
+    const w = workData().items[wid]; if (!w) return false;
+    const at = new Date().toISOString();
+    Object.assign(w, { done, done_changed_at: at, done_by: "slate" }); saveWork();
+    try {
+      const ok = await rpc("set_work_done", { p_wid: wid, p_done: done, p_at: at }, true);
+      if (!ok) { pullWork(false); return false; } // Workspace changed it more recently: take theirs
+      return true;
+    } catch (e) { w.__unsent = true; saveWork(); showToast({ text: "Couldn't reach Workspace. Slate will try again when you're online." }); return false; }
   }
   async function toggleWork(wid) {
     const w = workData().items[wid]; if (!w) return;
     if (!session) { showToast({ text: "Sign in to tick off work.", action: "Sign in", go: openAccount }); return; }
-    const done = !w.done, at = new Date().toISOString();
-    Object.assign(w, { done, done_changed_at: at, done_by: "slate" }); saveWork(); refreshWorkViews();
-    try {
-      const ok = await rpc("set_work_done", { p_wid: wid, p_done: done, p_at: at }, true);
-      if (!ok) pullWork(false); // Workspace changed it more recently: take theirs
-    } catch (e) { showToast({ text: "Couldn't save that to Workspace yet. It will try again when you're online." }); }
+    const done = !w.done;
+    const p = setWorkDone(wid, done);
+    refreshWorkViews();
+    await p;
+    if (w.kind === "step" && w.goal_id) await checkGoal(w.goal_id);
+  }
+  // A goal is finished when every step is: tell Workspace, and say so here
+  async function checkGoal(goalId) {
+    const g = goalRow(goalId); if (!g) return;
+    const steps = stepsOf(goalId), all = steps.length > 0 && steps.every(s => s.done);
+    if (all === !!g.done) return;
+    const ok = await setWorkDone(g.wid, all);
+    if (ok && all) { g.__reported = true; saveWork(); notify(`Completed “${g.title}”. Sent to your Workspace.`); }
+    refreshWorkViews();
+  }
+  function retryUnsent() {
+    Object.values(workData().items).filter(w => w.__unsent).forEach(async w => { delete w.__unsent; saveWork(); if (await setWorkDone(w.wid, !!w.done) && w.kind === "step") checkGoal(w.goal_id); });
   }
   function refreshWorkViews() {
     renderWorkPage(); renderWorkCard();
-    try {
-      // never redraw under something you're typing into the day list
-      const typing = document.activeElement && listPane.contains(document.activeElement) && document.activeElement.value;
-      if (view === "month") refreshMonth(); else if (!["home", "kids", "next", "week"].includes(view) && !typing) refreshList();
-    } catch (e) {}
+    try { if (view === "month") refreshMonth(); } catch (e) {}
   }
+  const goalRow = id => workMine().find(w => w.kind === "goal" && w.goal_id === id) || null;
+  const stepsOf = id => workMine().filter(w => w.kind === "step" && w.goal_id === id).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const workGoals = () => workMine().filter(w => w.kind === "goal").sort((a, b) => a.done - b.done || String(b.ws_updated_at).localeCompare(String(a.ws_updated_at)));
+  const looseTasks = () => workMine().filter(w => w.kind === "task").sort((a, b) => a.done - b.done || (a.due_date || "9999").localeCompare(b.due_date || "9999"));
   const PRI_WORD = { high: "High priority", medium: "Medium priority", low: "Low priority" };
   function workDue(w) {
     if (!w.due_date) return "";
@@ -4771,62 +4841,164 @@ button.stat.is-today span:first-child::after { content: " · Today"; color: var(
     const day = k === t ? "Today" : k === keyOf(addDays(today, 1)) ? "Tomorrow" : `${cap(MON3(d))} ${d.getDate()}`;
     return (k < t && !w.done ? "Overdue · " : "") + day + (w.start_time ? " · " + fmtTime(w.start_time) : "");
   }
-  function workItemEl(w) {
+  let workTab = "queue", workGoal = null;
+  try { workTab = localStorage.getItem("slate.worktab") === "outline" ? "outline" : "queue"; } catch (e) {}
+  const OK_ICON = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  function checkBtn(w, label) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "wi-check";
+    b.setAttribute("aria-label", `${w.done ? "Mark not done" : "Mark done"}: ${label || w.title}`); b.innerHTML = CHECK;
+    b.addEventListener("click", () => toggleWork(w.wid));
+    return b;
+  }
+  function itemEl(w) {
     const el = document.createElement("div"); el.className = "work-item" + (w.done ? " done" : "");
-    el.innerHTML = `<button class="wi-check" type="button" aria-label="${w.done ? "Mark not done" : "Mark done"}: ${esc(w.title)}">${CHECK}</button><div class="wi-body"><div class="wi-title"></div><div class="wi-meta"></div><div class="wi-notes"></div></div>`;
+    el.innerHTML = `<div class="wi-body"><div class="wi-title"></div><div class="wi-meta"></div><div class="wi-notes"></div></div>`;
+    el.prepend(checkBtn(w));
     el.querySelector(".wi-title").textContent = w.title;
-    const meta = [workDue(w), w.priority ? PRI_WORD[w.priority] : ""].filter(Boolean).join(" · ");
-    el.querySelector(".wi-meta").textContent = meta; if (!meta) el.querySelector(".wi-meta").remove();
+    const meta = [w.section || "", workDue(w), w.priority ? PRI_WORD[w.priority] : ""].filter(Boolean).join(" · ");
+    if (meta) el.querySelector(".wi-meta").textContent = meta; else el.querySelector(".wi-meta").remove();
     if (w.notes) el.querySelector(".wi-notes").textContent = w.notes; else el.querySelector(".wi-notes").remove();
-    el.querySelector(".wi-check").addEventListener("click", () => toggleWork(w.wid));
     return el;
   }
-  function workTasks() {
-    return Object.values(workData().items).filter(w => w.kind === "task" && !w.deleted)
-      .sort((a, b) => a.done - b.done || (a.due_date || "9999").localeCompare(b.due_date || "9999") || a.title.localeCompare(b.title));
+  function goalHead(g, steps) {
+    const n = steps.filter(s => s.done).length, pct = steps.length ? Math.round(n / steps.length * 100) : 0;
+    const h = document.createElement("div");
+    h.innerHTML = `<div class="wq-goal">Goal</div><div class="wq-title"></div><div class="wq-bar"><i style="width:${pct}%"></i></div><div class="wq-count">${n} of ${steps.length} ${steps.length === 1 ? "task" : "tasks"} done</div>`;
+    h.querySelector(".wq-title").textContent = g.title;
+    return h;
+  }
+  function completeEl(g) {
+    const el = document.createElement("div"); el.className = "wq-complete"; el.setAttribute("role", "status");
+    el.innerHTML = `<span class="ok">${OK_ICON}</span><span></span>`;
+    el.lastChild.textContent = g.done && g.done_by === "slate" ? "Completed goal sent to your Workspace" : "This goal is completed";
+    return el;
+  }
+  function renderQueue(list, g) {
+    const steps = stepsOf(g.goal_id);
+    list.appendChild(goalHead(g, steps));
+    const open = steps.filter(s => !s.done), done = steps.filter(s => s.done);
+    if (!open.length && steps.length) list.appendChild(completeEl(g));
+    if (open.length) {
+      const now = open[0], card = document.createElement("div"); card.className = "wq-now";
+      card.innerHTML = `<span class="lbl">Now · ${steps.indexOf(now) + 1} of ${steps.length}</span><span class="t"></span><span class="sec"></span><span class="n"></span><button type="button" class="done-btn">Done</button>`;
+      card.querySelector(".t").textContent = now.title;
+      if (now.section) card.querySelector(".sec").textContent = now.section; else card.querySelector(".sec").remove();
+      if (now.notes) card.querySelector(".n").textContent = now.notes; else card.querySelector(".n").remove();
+      card.querySelector(".done-btn").setAttribute("aria-label", `Done: ${now.title}`);
+      card.querySelector(".done-btn").addEventListener("click", () => toggleWork(now.wid));
+      list.appendChild(card);
+    }
+    if (open.length > 1) {
+      const sec = document.createElement("section"); sec.className = "work-group";
+      const h = document.createElement("h3"); h.textContent = "Up next"; sec.appendChild(h);
+      open.slice(1).forEach(w => sec.appendChild(itemEl(w)));
+      list.appendChild(sec);
+    }
+    if (done.length) {
+      const sec = document.createElement("section"); sec.className = "work-group";
+      const h = document.createElement("h3"); h.textContent = `Done (${done.length})`; sec.appendChild(h);
+      done.forEach(w => sec.appendChild(itemEl(w)));
+      list.appendChild(sec);
+    }
+  }
+  function renderOutline(list, g) {
+    const steps = stepsOf(g.goal_id);
+    list.appendChild(goalHead(g, steps));
+    if (steps.length && steps.every(s => s.done)) list.appendChild(completeEl(g));
+    const groups = [];
+    steps.forEach(st => { const last = groups[groups.length - 1]; if (last && last.name === (st.section || "")) last.items.push(st); else groups.push({ name: st.section || "", items: [st] }); });
+    let num = 0, secNum = 0;
+    groups.forEach(gr => {
+      const sec = document.createElement("section"); sec.className = "wo-sec";
+      if (gr.name) { const h = document.createElement("h3"); h.innerHTML = `<span>${++secNum}.</span>`; h.append(document.createTextNode(gr.name)); sec.appendChild(h); }
+      gr.items.forEach(st => {
+        num++;
+        const row = document.createElement("div"); row.className = "wo-step" + (st.done ? " done" : "");
+        row.innerHTML = `<span class="num">${num}</span><span></span><span class="tt"></span>`;
+        row.children[1].replaceWith(checkBtn(st));
+        row.querySelector(".tt").textContent = st.title;
+        sec.appendChild(row);
+      });
+      list.appendChild(sec);
+    });
   }
   function renderWorkPage() {
     const list = $("workList"); if (!list) return;
     list.replaceChildren();
+    const goalsBar = $("workGoals"); goalsBar.replaceChildren();
+    $("workTabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === workTab)));
     const note = $("workNote");
     if (!CAN_SYNC || !session) { note.textContent = "Sign in to your Slate account to see the work you send from Workspace."; $("workCount").textContent = ""; return; }
-    note.textContent = workMsg || "Sent from Workspace. Tick a task here and it's ticked there too.";
-    const all = workTasks(), open = all.filter(w => !w.done);
-    $("workCount").textContent = open.length + " to do";
-    if (!all.length) { const e = document.createElement("div"); e.className = "work-empty"; e.textContent = "Nothing yet. In Workspace, choose tasks and press Send to Slate."; list.appendChild(e); return; }
-    const groups = new Map();
-    open.forEach(w => { const g = w.project || "No project"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(w); });
-    groups.forEach((items, name) => {
-      const g = document.createElement("section"); g.className = "work-group";
-      const h = document.createElement("h3"); h.textContent = name; g.appendChild(h);
-      items.forEach(w => g.appendChild(workItemEl(w)));
-      list.appendChild(g);
+    const goals = workGoals(), loose = looseTasks();
+    if (!goals.some(g => g.goal_id === workGoal)) workGoal = goals.length ? goals[0].goal_id : null;
+    const g = goalRow(workGoal);
+    const open = g ? stepsOf(g.goal_id).filter(s => !s.done).length : 0;
+    $("workCount").textContent = g ? (open ? `${open} to do` : "Done") : "";
+    note.textContent = workMsg || (goals.length ? "" : "No goal yet. In Workspace, open a goal and press Send to iPad Slate.");
+    if (goals.length > 1) goals.forEach(x => {
+      const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(x.goal_id === workGoal));
+      b.textContent = x.title + (x.done ? " ✓" : ""); b.addEventListener("click", () => { workGoal = x.goal_id; renderWorkPage(); });
+      goalsBar.appendChild(b);
     });
-    const done = all.filter(w => w.done);
-    if (done.length) {
-      const g = document.createElement("section"); g.className = "work-group";
-      const h = document.createElement("h3"); h.textContent = `Done (${done.length})`; g.appendChild(h);
-      done.slice(0, 30).forEach(w => g.appendChild(workItemEl(w)));
-      list.appendChild(g);
+    if (g) (workTab === "outline" ? renderOutline : renderQueue)(list, g);
+    if (loose.length) {
+      const sec = document.createElement("section"); sec.className = "work-group";
+      const h = document.createElement("h3"); h.textContent = "Other tasks from Workspace"; sec.appendChild(h);
+      loose.forEach(w => sec.appendChild(itemEl(w)));
+      list.appendChild(sec);
     }
   }
+  $("workTabs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-tab]"); if (!b) return;
+    workTab = b.dataset.tab; try { localStorage.setItem("slate.worktab", workTab); } catch (er) {}
+    renderWorkPage();
+  });
   function renderWorkCard() {
     const el = $("hWork"); if (!el) return;
-    const open = session ? workTasks().filter(w => !w.done) : [];
-    const next = open.find(w => w.due_date);
-    el.innerHTML = `<div class="h-label"><span>Work Tasks</span><button class="link" type="button" id="workMore">View all ›</button></div>
-      <div class="w-open"><b>${open.length}</b><span>${open.length === 1 ? "task" : "tasks"} from Workspace</span></div>
+    const goals = session ? workGoals() : [], g = goals.find(x => !x.done) || goals[0];
+    const steps = g ? stepsOf(g.goal_id) : [], open = steps.filter(s => !s.done);
+    el.innerHTML = `<div class="h-label"><span>Work</span><button class="link" type="button" id="workMore">Open ›</button></div>
+      <div class="w-open"><b>${open.length}</b><span>${open.length === 1 ? "task" : "tasks"} left</span></div>
       <div class="w-next"></div>`;
-    el.querySelector(".w-next").textContent = !session ? "Sign in to see work sent from Workspace." : next ? `Next: ${next.title} · ${workDue(next)}` : open.length ? "" : "All clear.";
+    el.querySelector(".w-next").textContent = !session ? "Sign in to see work sent from Workspace." : !g ? "No goal sent from Workspace yet." : open.length ? `${g.title} · next: ${open[0].title}` : `${g.title} · completed`;
     $("workMore").addEventListener("click", openWork);
   }
-  function openWork() { $("workPage").scrollTop = 0; renderWorkPage(); $("workPage").classList.add("open"); $("workPage").setAttribute("aria-hidden", "false"); pullWork(false); }
-  $("workBack").addEventListener("click", () => { $("workPage").classList.remove("open"); $("workPage").setAttribute("aria-hidden", "true"); renderWorkCard(); });
+  function openWork() { $("workPage").scrollTop = 0; renderWorkPage(); $("workPage").classList.add("open"); $("workPage").setAttribute("aria-hidden", "false"); $("workBtn").classList.add("on"); pullWork(false); }
+  function closeWork() { $("workPage").classList.remove("open"); $("workPage").setAttribute("aria-hidden", "true"); $("workBtn").classList.remove("on"); renderWorkCard(); }
+  $("workBtn").addEventListener("click", () => $("workPage").classList.contains("open") ? closeWork() : openWork());
+  $("workBack").addEventListener("click", closeWork);
   $("workRefresh").addEventListener("click", () => pullWork(true));
   $("workPage").addEventListener("scroll", () => $("workPage").classList.toggle("scrolled", $("workPage").scrollTop > 6), { passive: true });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && session) pullWork(false); });
+  // Month calendar: show or hide the Work schedule, and add to it
+  $("workCalBtn").addEventListener("click", () => {
+    const on = !workCalShown();
+    try { localStorage.setItem("slate.workcal", on ? "1" : "0"); } catch (e) {}
+    syncWorkCalButton();
+    if (view === "month") refreshMonth();
+  });
+  $("workAddBtn").addEventListener("click", () => {
+    if (!session) { showToast({ text: "Sign in to add work events.", action: "Sign in", go: openAccount }); return; }
+    $("wevTitle").value = ""; $("wevStart").value = ""; $("wevEnd").value = ""; $("wevMsg").textContent = "";
+    $("wevDate").value = keyOf(current && current.getMonth() === today.getMonth() ? today : new Date(current.getFullYear(), current.getMonth(), 1));
+    $("workEventSheet").classList.add("open");
+    setTimeout(() => $("wevTitle").focus(), 150);
+  });
+  $("wevSave").addEventListener("click", async () => {
+    const title = $("wevTitle").value.trim(), date = $("wevDate").value, st = $("wevStart").value, en = $("wevEnd").value;
+    if (!title || !date) { $("wevMsg").textContent = "Give it a name and a day."; return; }
+    if (st && en && en <= st) { $("wevMsg").textContent = "The end time must be after the start."; return; }
+    $("wevMsg").textContent = "Adding…";
+    try {
+      await rpc("add_work_event", { p_wid: "slate:" + uid() + uid(), p_title: title, p_date: date, p_start: st || "", p_end: st ? en || "" : "", p_notes: "" }, true);
+      $("workEventSheet").classList.remove("open");
+      await pullWork(false);
+      showToast({ text: `“${title}” is on your Work calendar. Workspace adds it to its calendar next time it syncs.` });
+    } catch (e) { $("wevMsg").textContent = "Couldn't add it: " + friendly(e); }
+  });
+  syncWorkCalButton();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && session) { retryUnsent(); pullWork(false); } });
   setInterval(() => { if (document.visibilityState === "visible" && session) pullWork(false); }, 60000);
-  setTimeout(() => { if (session) pullWork(false); }, 1500);
+  setTimeout(() => { if (session) { retryUnsent(); pullWork(false); } }, 1500);
 
   const saveAnswers = a => rpc("set_recovery_answers", { p_kind: a.kind, p_name: a.name, p_birthday: a.birthday, p_extra: a.extra }, true);
   // After 3 days with an account, Slate asks for the questions each time it opens until they're saved

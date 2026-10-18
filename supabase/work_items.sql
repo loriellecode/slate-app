@@ -1,11 +1,12 @@
 -- Work items: tasks and events sent from the Workspace app to Slate, and their completion coming back.
--- Run once in the Supabase SQL editor of Slate's project (vdryzddjkvalxjbmfshh). Safe to run again.
+-- Run in the Supabase SQL editor of Slate's project (vdryzddjkvalxjbmfshh). Safe to run again, and running the
+-- newest version over an older one upgrades it in place without losing rows.
 -- No secrets here: every row belongs to the signed-in Slate account, and row-level security keeps it private.
 
 create table if not exists public.work_items (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   wid text not null check (char_length(wid) between 1 and 120),          -- Workspace's id, e.g. "task:abc" or "event:xyz"
-  kind text not null check (kind in ('task', 'event')),
+  kind text not null check (kind in ('task', 'event', 'goal', 'step')),
   title text not null default '' check (char_length(title) <= 500),
   notes text not null default '' check (char_length(notes) <= 8000),
   due_date date,                                                           -- the day (events always have one)
@@ -18,11 +19,29 @@ create table if not exists public.work_items (
   done_changed_at timestamptz not null default 'epoch',                    -- newest completion change wins
   done_by text check (done_by is null or done_by in ('workspace', 'slate')),
   deleted boolean not null default false,                                  -- removed in Workspace (kept as a marker)
+  goal_id text,                                                            -- for a goal's steps: the goal they belong to
+  goal_title text not null default '',
+  section text not null default '',                                        -- a step's milestone
+  position integer,                                                        -- a step's place in the goal, from 0
+  origin text not null default 'workspace',                                -- 'slate' for work events added in Slate
   ws_updated_at timestamptz not null default now(),                        -- when Workspace last changed the fields
   updated_at timestamptz not null default now(),                           -- any change; both apps read "what changed since"
   primary key (user_id, wid)
 );
 create index if not exists work_items_changed on public.work_items (user_id, updated_at);
+
+-- Upgrades a table made by the first version of this script.
+alter table public.work_items add column if not exists goal_id text;
+alter table public.work_items add column if not exists goal_title text not null default '';
+alter table public.work_items add column if not exists section text not null default '';
+alter table public.work_items add column if not exists position integer;
+alter table public.work_items add column if not exists origin text not null default 'workspace';
+alter table public.work_items drop constraint if exists work_items_kind_check;
+alter table public.work_items add constraint work_items_kind_check check (kind in ('task', 'event', 'goal', 'step'));
+alter table public.work_items drop constraint if exists work_items_origin_check;
+alter table public.work_items add constraint work_items_origin_check check (origin in ('workspace', 'slate'));
+alter table public.work_items drop constraint if exists work_items_texts_check;
+alter table public.work_items add constraint work_items_texts_check check (char_length(goal_title) <= 500 and char_length(section) <= 300 and (goal_id is null or char_length(goal_id) <= 120));
 
 alter table public.work_items enable row level security;
 drop policy if exists "own work items: read" on public.work_items;
@@ -51,16 +70,19 @@ begin
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) > 500 then raise exception 'send at most 500 items at once'; end if;
   for it in select * from jsonb_array_elements(p_items) loop
     insert into public.work_items as w (user_id, wid, kind, title, notes, due_date, start_time, end_time, location, priority, project,
+                                        goal_id, goal_title, section, position,
                                         done, done_changed_at, done_by, deleted, ws_updated_at)
     values (auth.uid(), it->>'wid', it->>'kind', coalesce(it->>'title', ''), coalesce(it->>'notes', ''),
             nullif(it->>'due_date', '')::date, nullif(it->>'start_time', ''), nullif(it->>'end_time', ''),
             coalesce(it->>'location', ''), nullif(it->>'priority', ''), coalesce(it->>'project', ''),
+            nullif(it->>'goal_id', ''), coalesce(it->>'goal_title', ''), coalesce(it->>'section', ''), (it->>'position')::integer,
             coalesce((it->>'done')::boolean, false), coalesce((it->>'done_changed_at')::timestamptz, 'epoch'), 'workspace',
             coalesce((it->>'deleted')::boolean, false), coalesce((it->>'ws_updated_at')::timestamptz, now()))
     on conflict (user_id, wid) do update set
       kind = excluded.kind, title = excluded.title, notes = excluded.notes, due_date = excluded.due_date,
       start_time = excluded.start_time, end_time = excluded.end_time, location = excluded.location,
       priority = excluded.priority, project = excluded.project, deleted = excluded.deleted, ws_updated_at = excluded.ws_updated_at,
+      goal_id = excluded.goal_id, goal_title = excluded.goal_title, section = excluded.section, position = excluded.position,
       done = case when excluded.done_changed_at > w.done_changed_at then excluded.done else w.done end,
       done_by = case when excluded.done_changed_at > w.done_changed_at then 'workspace' else w.done_by end,
       done_changed_at = greatest(excluded.done_changed_at, w.done_changed_at);
@@ -81,7 +103,22 @@ begin
   return changed > 0;
 end $$;
 
+-- Slate adds an event to the Work calendar. Workspace picks it up and from then on keeps it in step like its own.
+create or replace function public.add_work_event(p_wid text, p_title text, p_date date, p_start text, p_end text, p_notes text)
+returns boolean language plpgsql security invoker set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  if p_wid !~ '^slate:[A-Za-z0-9_-]{6,80}$' then raise exception 'bad id'; end if;
+  insert into public.work_items (user_id, wid, kind, title, notes, due_date, start_time, end_time, origin, ws_updated_at)
+  values (auth.uid(), p_wid, 'event', left(coalesce(p_title, ''), 500), left(coalesce(p_notes, ''), 8000), p_date,
+          nullif(p_start, ''), nullif(p_end, ''), 'slate', now())
+  on conflict (user_id, wid) do nothing;
+  return found;
+end $$;
+
 revoke all on function public.upsert_work_items(jsonb) from public, anon;
+revoke all on function public.add_work_event(text, text, date, text, text, text) from public, anon;
+grant execute on function public.add_work_event(text, text, date, text, text, text) to authenticated;
 revoke all on function public.set_work_done(text, boolean, timestamptz) from public, anon;
 grant execute on function public.upsert_work_items(jsonb) to authenticated;
 grant execute on function public.set_work_done(text, boolean, timestamptz) to authenticated;
